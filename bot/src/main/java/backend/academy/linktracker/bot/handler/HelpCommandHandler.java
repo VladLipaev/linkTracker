@@ -20,11 +20,6 @@ public class HelpCommandHandler implements CommandHandler {
     private final String description = "Список доступных команд";
 
     @Override
-    public boolean canHandle(String text) {
-        return commandName.equals(text);
-    }
-
-    @Override
     public void handle(Update update) {
         long chatId = update.message().chat().id();
         telegramClientFacade.sendMessage(chatId, "Выберите интересующую вас команду:");

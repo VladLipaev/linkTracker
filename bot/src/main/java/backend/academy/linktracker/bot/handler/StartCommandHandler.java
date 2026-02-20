@@ -19,11 +19,6 @@ public class StartCommandHandler implements CommandHandler {
     private final String description = "Приветствие пользователя";
 
     @Override
-    public boolean canHandle(String text) {
-        return commandName.equals(text);
-    }
-
-    @Override
     public void handle(Update update) {
         long chatId = update.message().chat().id();
         telegramClientFacade.sendMessage(chatId, "Добро пожаловать в Link Tracker!");

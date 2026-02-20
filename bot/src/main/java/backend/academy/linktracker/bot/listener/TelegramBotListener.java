@@ -27,9 +27,9 @@ public class TelegramBotListener {
                     return UpdatesListener.CONFIRMED_UPDATES_ALL;
                 },
                 e -> {
-                    try (var c1 = MDC.putCloseable("event.type", "network_event");
-                            var c2 = MDC.putCloseable("event.status", "failure");
-                            var c3 = MDC.putCloseable(
+                    try (var _ = MDC.putCloseable("event.type", "network_event");
+                            var _ = MDC.putCloseable("event.status", "failure");
+                            var _ = MDC.putCloseable(
                                     "error.kind", e.response() != null ? "telegram_api" : "network_connectivity")) {
                         if (e.response() != null) {
                             log.error(

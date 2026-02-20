@@ -15,10 +15,6 @@ public class TelegramClientFacade {
         return telegramClientBotCommands.getBotCommands();
     }
 
-    public void setBotCommands(BotCommand[] botCommands) {
-        telegramClientBotCommands.setBotCommands(botCommands);
-    }
-
     public void sendMessage(long chatId, String message) {
         telegramClientMessage.sendMessage(chatId, message);
     }

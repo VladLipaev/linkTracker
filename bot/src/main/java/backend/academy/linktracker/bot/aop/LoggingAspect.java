@@ -43,10 +43,10 @@ public class LoggingAspect {
         long startTime = System.nanoTime();
         String chatId = extractChatId(update);
 
-        try (var c1 = MDC.putCloseable("chat_id", chatId);
-                var c2 = MDC.putCloseable("event.type", "command");
-                var c3 = MDC.putCloseable("command.name", handler.getCommandName());
-                var c4 = MDC.putCloseable("command.handler", handler.getClass().getSimpleName())) {
+        try (var _ = MDC.putCloseable("chat_id", chatId);
+                var _ = MDC.putCloseable("event.type", "command");
+                var _ = MDC.putCloseable("command.name", handler.getCommandName());
+                var _ = MDC.putCloseable("command.handler", handler.getClass().getSimpleName())) {
 
             Object res = jp.proceed();
 
@@ -61,9 +61,9 @@ public class LoggingAspect {
     @Around("telegramUpdateDispatch() && args(update)")
     public Object wrapDispatch(ProceedingJoinPoint jp, Update update) throws Throwable {
         String chatId = extractChatId(update);
-        try (var c1 = MDC.putCloseable("update_id", String.valueOf(update.updateId()));
-                var c2 = MDC.putCloseable("chat_id", chatId);
-                var c3 = MDC.putCloseable("event.type", "telegram_update")) {
+        try (var _ = MDC.putCloseable("update_id", String.valueOf(update.updateId()));
+                var _ = MDC.putCloseable("chat_id", chatId);
+                var _ = MDC.putCloseable("event.type", "telegram_update")) {
 
             return jp.proceed();
         } catch (Throwable e) {
@@ -83,10 +83,10 @@ public class LoggingAspect {
         String chatId = extractChatId(update);
         String rawText = (update.message() != null) ? update.message().text() : "non-text";
 
-        try (var c1 = MDC.putCloseable("chat_id", chatId);
-                var c2 = MDC.putCloseable("event.type", "unknown_command");
-                var c3 = MDC.putCloseable("raw_text_length", String.valueOf(rawText.length()));
-                var c4 = MDC.putCloseable("command.handler", handler.getClass().getSimpleName())) {
+        try (var _ = MDC.putCloseable("chat_id", chatId);
+                var _ = MDC.putCloseable("event.type", "unknown_command");
+                var _ = MDC.putCloseable("raw_text_length", String.valueOf(rawText.length()));
+                var _ = MDC.putCloseable("command.handler", handler.getClass().getSimpleName())) {
 
             Object res = jp.proceed();
 
@@ -103,8 +103,8 @@ public class LoggingAspect {
         Object result = jp.proceed();
 
         if (result instanceof BaseResponse response && !response.isOk()) {
-            try (var c1 = MDC.putCloseable("error.kind", "telegram_api_error");
-                    var c2 = MDC.putCloseable("tg.error_code", String.valueOf(response.errorCode()))) {
+            try (var _ = MDC.putCloseable("error.kind", "telegram_api_error");
+                    var _ = MDC.putCloseable("tg.error_code", String.valueOf(response.errorCode()))) {
 
                 log.warn("Telegram API returned error: {}", response.description());
             }
