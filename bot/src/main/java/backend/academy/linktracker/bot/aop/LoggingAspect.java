@@ -23,7 +23,7 @@ public class LoggingAspect {
     @Pointcut("within(backend.academy.linktracker.bot.handler.UnknownCommandHandler)")
     public void isUnknownCommandHandler() {}
 
-    @Pointcut("execution(* backend.academy.linktracker.bot.configuration.TelegramUpdateDispatcher.dispatch(..))")
+    @Pointcut("execution(* backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher.dispatch(..))")
     public void telegramUpdateDispatch() {}
 
     @Pointcut(

@@ -1,6 +1,6 @@
 package backend.academy.linktracker.bot.handler;
 
-import backend.academy.linktracker.bot.configuration.TelegramClientFacade;
+import backend.academy.linktracker.bot.client.TelegramClientFacade;
 import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.model.Update;
 import lombok.Getter;

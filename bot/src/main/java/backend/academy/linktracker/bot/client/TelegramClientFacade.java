@@ -1,4 +1,4 @@
-package backend.academy.linktracker.bot.configuration;
+package backend.academy.linktracker.bot.client;
 
 import com.pengrad.telegrambot.model.BotCommand;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,5 @@
-package backend.academy.linktracker.bot.configuration;
+package backend.academy.linktracker.bot.handler;
 
-import backend.academy.linktracker.bot.handler.CommandHandler;
-import backend.academy.linktracker.bot.handler.UnknownCommandHandler;
 import com.pengrad.telegrambot.model.Update;
 import jakarta.annotation.PostConstruct;
 import java.util.List;

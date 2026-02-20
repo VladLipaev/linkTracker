@@ -1,6 +1,6 @@
 package backend.academy.linktracker.bot.listener;
 
-import backend.academy.linktracker.bot.configuration.TelegramUpdateDispatcher;
+import backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import jakarta.annotation.PostConstruct;
