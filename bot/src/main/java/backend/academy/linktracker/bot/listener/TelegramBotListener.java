@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 public class TelegramBotListener {
 
     private final TelegramBot telegramBot;
-
     private final TelegramUpdateDispatcher dispatcher;
 
     @PostConstruct
@@ -31,13 +30,23 @@ public class TelegramBotListener {
                             var _ = MDC.putCloseable("event.status", "failure");
                             var _ = MDC.putCloseable(
                                     "error.kind", e.response() != null ? "telegram_api" : "network_connectivity")) {
+
                         if (e.response() != null) {
-                            log.error(
-                                    "Telegram API Error: {} - {}",
-                                    e.response().errorCode(),
-                                    e.response().description());
+                            log.atError()
+                                    .setMessage("Telegram API Error in UpdatesListener")
+                                    .addKeyValue(
+                                            "telegram_error_code", e.response().errorCode())
+                                    .addKeyValue(
+                                            "telegram_error_description",
+                                            e.response().description())
+                                    .setCause(e)
+                                    .log();
                         } else {
-                            log.error("Network connectivity issue: {}", e.getMessage());
+                            log.atError()
+                                    .setMessage("Telegram Network Connectivity Issue")
+                                    .addKeyValue("error_details", e.getMessage())
+                                    .setCause(e)
+                                    .log();
                         }
                     }
                 });
@@ -46,6 +55,5 @@ public class TelegramBotListener {
     @PreDestroy
     public void stop() {
         log.info("Shutting down Telegram Bot listener...");
-        telegramBot.removeGetUpdatesListener();
     }
 }

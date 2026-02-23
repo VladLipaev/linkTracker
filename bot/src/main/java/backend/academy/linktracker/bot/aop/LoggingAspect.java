@@ -61,15 +61,18 @@ public class LoggingAspect {
     @Around("telegramUpdateDispatch() && args(update)")
     public Object wrapDispatch(ProceedingJoinPoint jp, Update update) throws Throwable {
         String chatId = extractChatId(update);
+
         try (var _ = MDC.putCloseable("update_id", String.valueOf(update.updateId()));
                 var _ = MDC.putCloseable("chat_id", chatId);
                 var _ = MDC.putCloseable("event.type", "telegram_update")) {
 
             return jp.proceed();
         } catch (Throwable e) {
-            MDC.put("error.kind", "dispatch_error");
-            log.error("Failed to dispatch update", e);
-            MDC.remove("error.kind");
+            log.atError()
+                    .setMessage("Failed to dispatch update")
+                    .addKeyValue("error.kind", "dispatch_error")
+                    .setCause(e)
+                    .log();
             throw e;
         }
     }
@@ -81,7 +84,9 @@ public class LoggingAspect {
             throws Throwable {
         long startTime = System.nanoTime();
         String chatId = extractChatId(update);
-        String rawText = (update.message() != null) ? update.message().text() : "non-text";
+        String rawText = (update.message() != null && update.message().text() != null)
+                ? update.message().text()
+                : "non-text";
 
         try (var _ = MDC.putCloseable("chat_id", chatId);
                 var _ = MDC.putCloseable("event.type", "unknown_command");
@@ -103,31 +108,32 @@ public class LoggingAspect {
         Object result = jp.proceed();
 
         if (result instanceof BaseResponse response && !response.isOk()) {
-            try (var _ = MDC.putCloseable("error.kind", "telegram_api_error");
-                    var _ = MDC.putCloseable("tg.error_code", String.valueOf(response.errorCode()))) {
-
-                log.warn("Telegram API returned error: {}", response.description());
-            }
+            log.atWarn()
+                    .setMessage("Telegram API returned error")
+                    .addKeyValue("error.kind", "telegram_api_error")
+                    .addKeyValue("tg.error_code", response.errorCode())
+                    .addKeyValue("tg.error_description", response.description())
+                    .log();
         }
         return result;
     }
 
     private void logSuccess(long startTime) {
-        MDC.put("event.status", "success");
-        MDC.put("event.duration_ms", formatDuration(startTime));
-        log.info("Operation completed successfully");
-        MDC.remove("event.status");
-        MDC.remove("event.duration_ms");
+        log.atInfo()
+                .setMessage("Operation completed successfully")
+                .addKeyValue("event.status", "success")
+                .addKeyValue("event.duration_ms", formatDuration(startTime))
+                .log();
     }
 
     private void logFailure(long startTime, String errorKind, Throwable e) {
-        MDC.put("event.status", "failure");
-        MDC.put("event.duration_ms", formatDuration(startTime));
-        MDC.put("error.kind", errorKind);
-        log.error("Operation failed", e);
-        MDC.remove("event.status");
-        MDC.remove("event.duration_ms");
-        MDC.remove("error.kind");
+        log.atError()
+                .setMessage("Operation failed")
+                .addKeyValue("event.status", "failure")
+                .addKeyValue("event.duration_ms", formatDuration(startTime))
+                .addKeyValue("error.kind", errorKind)
+                .setCause(e)
+                .log();
     }
 
     private String extractChatId(Update update) {
