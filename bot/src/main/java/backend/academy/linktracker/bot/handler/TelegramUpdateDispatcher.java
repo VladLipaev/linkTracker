@@ -2,7 +2,6 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.handler.logging.TelegramDispatcherLogging;
 import com.pengrad.telegrambot.model.Update;
-import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,8 +21,8 @@ public class TelegramUpdateDispatcher {
 
     public void initHandlerMap() {
         handlerMap = commandHandlers.stream()
-            .filter(CommandHandler::isEnabled)
-            .collect(Collectors.toMap(CommandHandler::getCommandName, handler -> handler));
+                .filter(CommandHandler::isEnabled)
+                .collect(Collectors.toMap(CommandHandler::getCommandName, handler -> handler));
     }
 
     public void dispatch(Update update) {

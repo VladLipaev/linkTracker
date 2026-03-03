@@ -4,7 +4,6 @@ import backend.academy.linktracker.bot.client.TelegramClientFacade;
 import backend.academy.linktracker.bot.command.TelegramCommand;
 import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.model.Update;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,7 +15,6 @@ public class HelpCommandHandler implements CommandHandler {
 
     private final TelegramClientFacade telegramClientFacade;
     private final TelegramCommand telegramCommand = TelegramCommand.HELP;
-
 
     @Override
     public void handle(Update update) {
@@ -32,7 +30,6 @@ public class HelpCommandHandler implements CommandHandler {
                     .append("\n");
         }
         telegramClientFacade.sendMessage(chatId, sb.toString());
-
     }
 
     @Override
@@ -49,5 +46,4 @@ public class HelpCommandHandler implements CommandHandler {
     public boolean isEnabled() {
         return telegramCommand.isEnabled();
     }
-
 }

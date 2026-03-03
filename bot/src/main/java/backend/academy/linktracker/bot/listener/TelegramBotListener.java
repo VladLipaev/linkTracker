@@ -16,7 +16,6 @@ public class TelegramBotListener {
     private final TelegramBot telegramBot;
     private final TelegramUpdateDispatcher dispatcher;
 
-
     public void start() {
         telegramBot.setUpdatesListener(
                 updates -> {
@@ -24,23 +23,23 @@ public class TelegramBotListener {
                     return UpdatesListener.CONFIRMED_UPDATES_ALL;
                 },
                 e -> {
-                        if (e.response() != null) {
-                            log.atError()
-                                    .setMessage("Telegram API Error in UpdatesListener")
-                                    .addKeyValue(
-                                            "telegram_error_code", e.response().errorCode())
-                                    .addKeyValue(
-                                            "telegram_error_description",
-                                            e.response().description())
-                                    .setCause(e)
-                                    .log();
-                        } else {
-                            log.atError()
-                                    .setMessage("Telegram Network Connectivity Issue")
-                                    .addKeyValue("error_details", e.getMessage())
-                                    .setCause(e)
-                                    .log();
-                        }});
+                    if (e.response() != null) {
+                        log.atError()
+                                .setMessage("Telegram API Error in UpdatesListener")
+                                .addKeyValue("telegram_error_code", e.response().errorCode())
+                                .addKeyValue(
+                                        "telegram_error_description",
+                                        e.response().description())
+                                .setCause(e)
+                                .log();
+                    } else {
+                        log.atError()
+                                .setMessage("Telegram Network Connectivity Issue")
+                                .addKeyValue("error_details", e.getMessage())
+                                .setCause(e)
+                                .log();
+                    }
+                });
     }
 
     @PreDestroy
@@ -52,10 +51,10 @@ public class TelegramBotListener {
             log.debug("Updates listener removed");
         } catch (Exception e) {
             log.atWarn()
-                .setMessage("Failed to remove updates listener")
-                .addKeyValue("error.kind", "telegram_listener_shutdown_error")
-                .setCause(e)
-                .log();
+                    .setMessage("Failed to remove updates listener")
+                    .addKeyValue("error.kind", "telegram_listener_shutdown_error")
+                    .setCause(e)
+                    .log();
         }
 
         try {
@@ -63,10 +62,10 @@ public class TelegramBotListener {
             log.debug("Telegram bot shutdown completed");
         } catch (Exception e) {
             log.atWarn()
-                .setMessage("Failed to shutdown Telegram bot")
-                .addKeyValue("error.kind", "telegram_shutdown_error")
-                .setCause(e)
-                .log();
+                    .setMessage("Failed to shutdown Telegram bot")
+                    .addKeyValue("error.kind", "telegram_shutdown_error")
+                    .setCause(e)
+                    .log();
         }
     }
 }

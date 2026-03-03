@@ -5,7 +5,6 @@ import backend.academy.linktracker.bot.listener.TelegramBotListener;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,7 +19,7 @@ public class TelegramBotStart {
     private final TelegramBotListener telegramBotListener;
 
     @EventListener(ContextRefreshedEvent.class)
-    public void start(){
+    public void start() {
         log.info("Starting up telegram bot");
         telegramBotListener.start();
         telegramUpdateDispatcher.initHandlerMap();
@@ -28,7 +27,7 @@ public class TelegramBotStart {
     }
 
     @PreDestroy
-    public void stop(){
+    public void stop() {
         log.info("Shutting down telegram bot");
         telegramBotListener.stop();
     }

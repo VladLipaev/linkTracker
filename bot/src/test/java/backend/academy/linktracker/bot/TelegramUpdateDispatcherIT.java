@@ -18,8 +18,6 @@ import com.pengrad.telegrambot.request.GetMyCommands;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetMyCommandsResponse;
 import com.pengrad.telegrambot.response.SendResponse;
-import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,16 +28,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(
-    classes = TelegramUpdateDispatcherIT.TestConfig.class
-)
+@SpringBootTest(classes = TelegramUpdateDispatcherIT.TestConfig.class)
 class TelegramUpdateDispatcherIT {
 
     @TestConfiguration
-    @ComponentScan(basePackages = {
-        "backend.academy.linktracker.bot.handler",
-        "backend.academy.linktracker.bot.configuration"
-    })
+    @ComponentScan(
+            basePackages = {"backend.academy.linktracker.bot.handler", "backend.academy.linktracker.bot.configuration"})
     static class TestConfig {}
 
     @Autowired
@@ -52,11 +46,9 @@ class TelegramUpdateDispatcherIT {
     private TelegramBotStart telegramBotStart;
 
     @BeforeEach
-    public void setTelegramUpdateDispatcher(){
+    public void setTelegramUpdateDispatcher() {
         telegramUpdateDispatcher.initHandlerMap();
     }
-
-
 
     @Test
     @DisplayName("Интеграционный тест команды /start")

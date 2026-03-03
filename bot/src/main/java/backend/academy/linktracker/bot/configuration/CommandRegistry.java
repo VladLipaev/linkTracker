@@ -17,7 +17,6 @@ public class CommandRegistry {
     private final TelegramBot telegramBot;
     private final List<CommandHandler> commandHandlers;
 
-
     public void initCommands() {
         BotCommand[] botCommands = commandHandlers.stream()
                 .filter(command -> !command.getCommandName().isBlank() && command.isEnabled())
