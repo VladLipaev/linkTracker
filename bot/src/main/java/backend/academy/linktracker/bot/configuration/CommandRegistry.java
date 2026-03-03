@@ -8,23 +8,19 @@ import com.pengrad.telegrambot.request.SetMyCommands;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "bot.command-registry", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class CommandRegistry {
     private final TelegramBot telegramBot;
     private final List<CommandHandler> commandHandlers;
 
-    @EventListener(ContextRefreshedEvent.class)
+
     public void initCommands() {
         BotCommand[] botCommands = commandHandlers.stream()
-                .filter(command -> !command.getCommandName().isBlank())
+                .filter(command -> !command.getCommandName().isBlank() && command.isEnabled())
                 .map(handler ->
                         new BotCommand(handler.getCommandName().substring(1).toLowerCase(), handler.getDescription()))
                 .toArray(BotCommand[]::new);

@@ -1,26 +1,40 @@
 package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.TelegramClientFacade;
+import backend.academy.linktracker.bot.command.TelegramCommand;
 import com.pengrad.telegrambot.model.Update;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class StartCommandHandler implements CommandHandler {
 
     private final TelegramClientFacade telegramClientFacade;
-
-    @Getter
-    private final String commandName = "/start";
-
-    @Getter
-    private final String description = "Приветствие пользователя";
+    private final TelegramCommand telegramCommand = TelegramCommand.START;
 
     @Override
     public void handle(Update update) {
         long chatId = update.message().chat().id();
         telegramClientFacade.sendMessage(chatId, "Добро пожаловать в Link Tracker!");
     }
+
+    @Override
+    public String getCommandName() {
+        return telegramCommand.getValue();
+    }
+
+    @Override
+    public String getDescription() {
+        return telegramCommand.getDescription();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return telegramCommand.isEnabled();
+    }
+
 }

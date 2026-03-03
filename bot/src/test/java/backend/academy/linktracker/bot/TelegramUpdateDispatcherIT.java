@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import backend.academy.linktracker.bot.configuration.TelegramBotStart;
 import backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.BotCommand;
@@ -17,21 +18,45 @@ import com.pengrad.telegrambot.request.GetMyCommands;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetMyCommandsResponse;
 import com.pengrad.telegrambot.response.SendResponse;
+import org.aspectj.lang.annotation.Before;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(properties = "bot.command-registry.enabled=false")
-public class TelegramUpdateDispatcherIT {
+@SpringBootTest(
+    classes = TelegramUpdateDispatcherIT.TestConfig.class
+)
+class TelegramUpdateDispatcherIT {
+
+    @TestConfiguration
+    @ComponentScan(basePackages = {
+        "backend.academy.linktracker.bot.handler",
+        "backend.academy.linktracker.bot.configuration"
+    })
+    static class TestConfig {}
 
     @Autowired
     private TelegramUpdateDispatcher telegramUpdateDispatcher;
 
     @MockitoBean
     private TelegramBot telegramBot;
+
+    @MockitoBean
+    private TelegramBotStart telegramBotStart;
+
+    @BeforeEach
+    public void setTelegramUpdateDispatcher(){
+        telegramUpdateDispatcher.initHandlerMap();
+    }
+
+
 
     @Test
     @DisplayName("Интеграционный тест команды /start")

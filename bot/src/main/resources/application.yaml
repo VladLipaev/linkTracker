@@ -13,6 +13,6 @@ app:
     debug: false
 logging:
   pattern:
-    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%X){yellow}%n"
+    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
   level:
     root: INFO

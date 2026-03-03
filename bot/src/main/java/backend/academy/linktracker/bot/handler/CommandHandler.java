@@ -9,4 +9,6 @@ public interface CommandHandler {
     String getCommandName();
 
     String getDescription();
+
+    boolean isEnabled();
 }
