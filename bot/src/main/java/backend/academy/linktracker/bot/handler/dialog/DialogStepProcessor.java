@@ -68,7 +68,7 @@ public class DialogStepProcessor {
 
                 // состояние ожидания тегов для нахождения списка ссылок по данному тегу
                 case WAITING_FOR_LIST_TAG -> {
-                    String tag = (text.equalsIgnoreCase("skip")) ? null : text;
+                    String tag = text.equalsIgnoreCase("skip") ? null : text;
                     ListLinksResponse response = scrapperClient.getLinks(chatId, tag);
 
                     if (response.links().isEmpty()) {
