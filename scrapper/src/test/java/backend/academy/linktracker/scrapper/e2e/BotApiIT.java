@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-public class BotApiTest extends IntegrationEnvironment {
+public class BotApiIT extends IntegrationEnvironment {
 
     private final RestTemplate restTemplate = new RestTemplate();
 

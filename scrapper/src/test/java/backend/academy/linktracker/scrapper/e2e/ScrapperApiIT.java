@@ -9,7 +9,7 @@ import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-public class ScrapperApiTest extends IntegrationEnvironment {
+public class ScrapperApiIT extends IntegrationEnvironment {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
