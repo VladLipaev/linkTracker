@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import backend.academy.linktracker.bot.client.scrapper.RestClientScrapperRestClient;
 import backend.academy.linktracker.bot.configuration.TelegramBotStart;
 import backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher;
 import com.pengrad.telegrambot.TelegramBot;
@@ -44,6 +45,9 @@ class TelegramUpdateDispatcherIT {
 
     @MockitoBean
     private TelegramBotStart telegramBotStart;
+
+    @MockitoBean
+    private RestClientScrapperRestClient restClient;
 
     @BeforeEach
     public void setTelegramUpdateDispatcher() {

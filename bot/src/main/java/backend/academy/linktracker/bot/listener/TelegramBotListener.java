@@ -3,6 +3,7 @@ package backend.academy.linktracker.bot.listener;
 import backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.Update;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +20,23 @@ public class TelegramBotListener {
     public void start() {
         telegramBot.setUpdatesListener(
                 updates -> {
-                    updates.forEach(dispatcher::dispatch);
+                    for (Update update : updates) {
+                        try {
+                            dispatcher.dispatch(update);
+                        } catch (Exception e) {
+                            log.atError()
+                                    .setMessage("Ошибка при обработке апдейта")
+                                    .addKeyValue("update_id", update.updateId())
+                                    .setCause(e)
+                                    .log();
+                        }
+                    }
                     return UpdatesListener.CONFIRMED_UPDATES_ALL;
                 },
                 e -> {
                     if (e.response() != null) {
                         log.atError()
-                                .setMessage("Telegram API Error in UpdatesListener")
+                                .setMessage("Ошибка Телеграм api в UpdatesListener")
                                 .addKeyValue("telegram_error_code", e.response().errorCode())
                                 .addKeyValue(
                                         "telegram_error_description",
@@ -34,7 +45,7 @@ public class TelegramBotListener {
                                 .log();
                     } else {
                         log.atError()
-                                .setMessage("Telegram Network Connectivity Issue")
+                                .setMessage("Проблема соединения с телеграм")
                                 .addKeyValue("error_details", e.getMessage())
                                 .setCause(e)
                                 .log();
@@ -44,14 +55,13 @@ public class TelegramBotListener {
 
     @PreDestroy
     public void stop() {
-        log.info("Shutting down Telegram Bot listener...");
+        log.info("Остановка слушателя телеграм...");
 
         try {
             telegramBot.removeGetUpdatesListener();
-            log.debug("Updates listener removed");
         } catch (Exception e) {
             log.atWarn()
-                    .setMessage("Failed to remove updates listener")
+                    .setMessage("Не получилось остановить слушателя")
                     .addKeyValue("error.kind", "telegram_listener_shutdown_error")
                     .setCause(e)
                     .log();
@@ -59,10 +69,9 @@ public class TelegramBotListener {
 
         try {
             telegramBot.shutdown();
-            log.debug("Telegram bot shutdown completed");
         } catch (Exception e) {
             log.atWarn()
-                    .setMessage("Failed to shutdown Telegram bot")
+                    .setMessage("неполучилось остановить Telegram bot")
                     .addKeyValue("error.kind", "telegram_shutdown_error")
                     .setCause(e)
                     .log();

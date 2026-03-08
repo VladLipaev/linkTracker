@@ -1,6 +1,8 @@
 package backend.academy.linktracker.bot.handler;
 
-import backend.academy.linktracker.bot.client.TelegramClientFacade;
+import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
+import backend.academy.linktracker.bot.client.scrapper.ScrapperRestClient;
+import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.command.TelegramCommand;
 import com.pengrad.telegrambot.model.Update;
 import lombok.RequiredArgsConstructor;
@@ -14,11 +16,18 @@ public class StartCommandHandler implements CommandHandler {
 
     private final TelegramClientFacade telegramClientFacade;
     private final TelegramCommand telegramCommand = TelegramCommand.START;
+    private final ScrapperRestClient scrapperRestClient;
 
     @Override
     public void handle(Update update) {
         long chatId = update.message().chat().id();
-        telegramClientFacade.sendMessage(chatId, "Добро пожаловать в Link Tracker!");
+        try {
+            scrapperRestClient.registerChat(chatId);
+
+            telegramClientFacade.sendMessage(chatId, "Добро пожаловать в Link Tracker!");
+        } catch (ScrapperClientException e) {
+            telegramClientFacade.sendMessage(chatId, e.getMessage());
+        }
     }
 
     @Override

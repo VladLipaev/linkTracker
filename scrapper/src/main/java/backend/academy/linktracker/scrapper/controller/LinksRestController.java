@@ -1,0 +1,64 @@
+package backend.academy.linktracker.scrapper.controller;
+
+import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
+import backend.academy.linktracker.scrapper.dto.LinkResponse;
+import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
+import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
+import backend.academy.linktracker.scrapper.service.LinksService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/links")
+@RequiredArgsConstructor
+public class LinksRestController {
+
+    private final LinksService linksService;
+
+    @GetMapping
+    public ResponseEntity<ListLinksResponse> getAllLinks(
+            @RequestHeader("Tg-Chat-Id") Long chatId, @RequestParam(value = "tag", required = false) String tag) {
+        return ResponseEntity.ok().body(linksService.getAllLinks(chatId, tag));
+    }
+
+    @PostMapping
+    public ResponseEntity<LinkResponse> addLink(
+            @RequestHeader("Tg-Chat-Id") Long chatId,
+            @Valid @RequestBody AddLinkRequest addLinkRequest,
+            BindingResult bindingResult)
+            throws BindException {
+        validateRequestBody(bindingResult);
+        return ResponseEntity.ok(this.linksService.addLink(chatId, addLinkRequest));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<LinkResponse> removeLink(
+            @RequestHeader("Tg-Chat-Id") Long chatId,
+            @Valid @RequestBody RemoveLinkRequest removeLinkRequest,
+            BindingResult bindingResult)
+            throws BindException {
+        validateRequestBody(bindingResult);
+        return ResponseEntity.ok(this.linksService.removeLink(chatId, removeLinkRequest));
+    }
+
+    private void validateRequestBody(BindingResult bindingResult) throws BindException {
+        if (bindingResult.hasErrors()) {
+            if (bindingResult instanceof BindException e) {
+                throw e;
+            } else {
+                throw new BindException(bindingResult);
+            }
+        }
+    }
+}

@@ -11,3 +11,13 @@ app:
     access-token: ${STACKOVERFLOW_ACCESS_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
   github:
     token: ${GITHUB_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
+  bot:
+    uri: http://localhost:8080
+  scheduler:
+    interval: 20s
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
+  level:
+    root: INFO
