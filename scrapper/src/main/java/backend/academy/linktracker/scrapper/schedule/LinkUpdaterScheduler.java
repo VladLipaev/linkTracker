@@ -7,7 +7,6 @@ import backend.academy.linktracker.scrapper.handler.LinkHandler;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -64,10 +63,7 @@ public class LinkUpdaterScheduler {
         }
 
         // 4. Берем данные о ссылке из нашего хранилища (любую запись с этим URL)
-        Optional<Link> linkData = linksRepository.getAnyLinkByUrl(url);
-        if (linkData.isEmpty()) return;
-
-        Link currentLink = linkData.get();
+        Link currentLink = linksRepository.getAnyLinkByUrl(url).orElseThrow();
 
         // 5. Запрашиваем внешнее API (GitHub/StackOverflow)
         try {
