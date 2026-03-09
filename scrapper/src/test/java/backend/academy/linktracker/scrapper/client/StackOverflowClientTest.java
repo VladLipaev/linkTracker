@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 @WireMockTest(httpPort = 54321)
 class StackOverflowClientTest {
