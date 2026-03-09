@@ -4,5 +4,3 @@ app:
     token: test-token
     update-listener-sleep: 1s
     debug: true
-  scrapper:
-    uri: http://localhost:54321

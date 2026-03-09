@@ -93,6 +93,7 @@ public class DialogStepProcessor {
                     .setCause(e)
                     .log();
             telegramClientFacade.sendMessage(chatId, "Ошибка: " + e.getMessage());
+            dialogManager.setSession(chatId, UserSession.base());
 
         } catch (ResourceAccessException e) {
             log.atError()
@@ -103,6 +104,7 @@ public class DialogStepProcessor {
                     .setCause(e)
                     .log();
             telegramClientFacade.sendMessage(chatId, "Сервис отслеживания временно недоступен. Попробуйте позже.");
+            dialogManager.setSession(chatId, UserSession.base());
         }
     }
 }

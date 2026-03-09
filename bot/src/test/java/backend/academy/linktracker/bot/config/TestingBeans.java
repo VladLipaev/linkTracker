@@ -13,10 +13,8 @@ public class TestingBeans {
     @Bean
     @Primary
     public RestClientScrapperRestClient restClient(
-        @Value("${app.scrapper.uri:http://localhost:54321}") String scrapperBaseUri
-    ) {
-        return new RestClientScrapperRestClient(RestClient.builder()
-            .baseUrl(scrapperBaseUri)
-            .build());
+            @Value("${app.scrapper.uri:http://localhost:54321}") String scrapperBaseUri) {
+        return new RestClientScrapperRestClient(
+                RestClient.builder().baseUrl(scrapperBaseUri).build());
     }
 }
