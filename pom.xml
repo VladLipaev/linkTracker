@@ -317,6 +317,9 @@
                         <rulesets>
                             <ruleset>pmd.xml</ruleset>
                         </rulesets>
+                        <excludeRoots>
+                            <excludeRoot>${project.build.directory}/generated-sources/protobuf</excludeRoot>
+                        </excludeRoots>
                     </configuration>
                     <dependencies>
                         <dependency>
