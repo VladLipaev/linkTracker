@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: scrapper
+  grpc:
+    server:
+      port: 9081
+    client:
+      default-channel:
+        address: 'static://localhost:9080'
+        negotiation-type: plaintext
 
 app:
   stackoverflow:
@@ -15,6 +22,9 @@ app:
     uri: http://localhost:8080
   scheduler:
     interval: 20s
+  communication:
+    mode: grpc # rest
+
 
 logging:
   pattern:

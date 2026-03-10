@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import backend.academy.linktracker.scrapper.client.TelegramBotRestClient;
+import backend.academy.linktracker.scrapper.client.bot.TelegramBotRestClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.handler.LinkHandler;

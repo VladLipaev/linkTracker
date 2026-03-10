@@ -1,10 +1,11 @@
 package backend.academy.linktracker.bot.controller;
 
-import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.dto.LinkUpdate;
+import backend.academy.linktracker.bot.service.TelegramUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -17,9 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/updates")
+@ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
 public class BotRestController {
 
-    private final TelegramClientFacade telegramClientFacade;
+    private final TelegramUpdateService telegramUpdateService;
 
     @PostMapping
     public ResponseEntity<Void> postUpdate(@Valid @RequestBody LinkUpdate linkUpdate, BindingResult bindingResult)
@@ -31,10 +33,7 @@ public class BotRestController {
                 throw new BindException(bindingResult);
             }
         } else {
-            String message = "Обновление по ссылке: " + linkUpdate.url() + "\n" + linkUpdate.description();
-            for (Long chatId : linkUpdate.tgChatIds()) {
-                telegramClientFacade.sendMessage(chatId, message);
-            }
+            telegramUpdateService.postUpdate(linkUpdate);
             return ResponseEntity.ok().build();
         }
     }

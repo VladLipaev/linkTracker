@@ -17,8 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
-public class ScrapperControllerAdvice {
-
+public class RestScrapperControllerAdvice {
     @ExceptionHandler(ChatAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleChatAlreadyExists(ChatAlreadyExistsException ex) {
         return createResponse(ex, HttpStatus.CONFLICT, "Чат уже существует");

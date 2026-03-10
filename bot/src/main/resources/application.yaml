@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: bot
+  grpc:
+    server:
+      port: 9080
+    client:
+      default-channel:
+        address: 'static://localhost:9081'
+        negotiation-type: plaintext
 
 app:
   telegram:
@@ -13,6 +20,8 @@ app:
     debug: false
   scrapper:
     uri: http://localhost:8081
+  communication:
+    mode: grpc # rest
 
 logging:
   pattern:

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package backend.academy.linktracker;
+
+option java_multiple_files = true;
+option java_package = "backend.academy.linktracker.grpc.scrapper";
+
+import "google/protobuf/empty.proto";
+
+service ScrapperService {
+    // Управление чатами
+    rpc RegisterChat (ChatRequest) returns (google.protobuf.Empty);
+    rpc DeleteChat (ChatRequest) returns (google.protobuf.Empty);
+
+    // Управление ссылками
+    rpc AddLink (AddLinkRequest) returns (LinkResponse);
+    rpc GetLinks (GetLinksRequest) returns (ListLinksResponse);
+    rpc RemoveLink (RemoveLinkRequest) returns (LinkResponse);
+}
+
+message ChatRequest {
+    int64 chat_id = 1;
+}
+
+message AddLinkRequest {
+    int64 chat_id = 1; // Перенесли из заголовка в тело
+    string link = 2;
+    repeated string tags = 3;
+}
+
+message GetLinksRequest {
+    int64 chat_id = 1;
+    optional string tag = 2; // optional, так как тэг может отсутствовать
+}
+
+message RemoveLinkRequest {
+    int64 chat_id = 1;
+    string link = 2;
+}
+
+message LinkResponse {
+    int64 id = 1;
+    string url = 2;
+    repeated string tags = 3;
+}
+
+message ListLinksResponse {
+    repeated LinkResponse links = 1;
+    int32 size = 2;
+}

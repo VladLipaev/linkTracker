@@ -1,11 +1,12 @@
 package backend.academy.linktracker.scrapper.config;
 
 import backend.academy.linktracker.scrapper.client.GitHubClient;
-import backend.academy.linktracker.scrapper.client.RestClientTelegramBotRestClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
+import backend.academy.linktracker.scrapper.client.bot.RestClientTelegramBotRestClient;
 import backend.academy.linktracker.scrapper.properties.GithubProperties;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestClient;
 public class ClientBeans {
 
     @Bean
+    @ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
     public RestClientTelegramBotRestClient restClientTelegramBotRestClient(
             @Value("${app.bot.uri:http://localhost:8080}") String botBaseUri) {
         return new RestClientTelegramBotRestClient(

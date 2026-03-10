@@ -14,7 +14,7 @@ public class DefaultTgChatService implements TgChatService {
     public void addTgChat(Long chatId) {
         boolean isNew = tgChatRepository.save(chatId);
         if (!isNew) {
-            throw new ChatAlreadyExistsException("Чат с ID " + chatId + " уже зарегистрирован");
+            throw new ChatAlreadyExistsException("Чат уже зарегистрирован");
         }
     }
 
@@ -22,7 +22,7 @@ public class DefaultTgChatService implements TgChatService {
     public void deleteTgChat(Long chatId) {
         boolean isGone = this.tgChatRepository.delete(chatId);
         if (!isGone) {
-            throw new ChatNotFoundException("Чат с ID " + chatId + " не существует");
+            throw new ChatNotFoundException("Чат не существует");
         }
     }
 }

@@ -79,6 +79,7 @@
         <spotbugs-maven-plugin.version>${spotbugs.version}.2</spotbugs-maven-plugin.version>
         <spotbugs-slf4j-plugin.version>1.5.0</spotbugs-slf4j-plugin.version>
         <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
+        <error-prone.version>2.41.0</error-prone.version>
     </properties>
 
     <dependencyManagement>
@@ -111,6 +112,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
             <dependency>
                 <groupId>io.opentelemetry.instrumentation</groupId>
                 <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
@@ -122,6 +124,13 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+            <!-- без явной настройки этой зависимости происходит ошибка у enforcer,
+             так как будет разная версия транзитивной зависимости для grpc и guava-->
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>${error-prone.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

@@ -1,4 +1,4 @@
-package backend.academy.linktracker.scrapper.client;
+package backend.academy.linktracker.scrapper.client.bot;
 
 import backend.academy.linktracker.scrapper.dto.ApiErrorResponse;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;

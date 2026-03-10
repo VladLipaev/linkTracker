@@ -25,7 +25,7 @@ public class DefaultLinksService implements LinksService {
     @Override
     public ListLinksResponse getAllLinks(Long chatId, String tag) {
         if (tgChatRepository.findByChatId(chatId).isEmpty()) {
-            throw new ChatNotFoundException("Чат с ID " + chatId + " не зарегистрирован");
+            throw new ChatNotFoundException("Чат не зарегистрирован");
         }
 
         List<Link> links = tag != null
@@ -46,7 +46,7 @@ public class DefaultLinksService implements LinksService {
     @Override
     public LinkResponse addLink(Long chatId, AddLinkRequest request) {
         if (tgChatRepository.findByChatId(chatId).isEmpty()) {
-            throw new ChatNotFoundException("Чат с ID %d не зарегистрирован".formatted(chatId));
+            throw new ChatNotFoundException("Чат не зарегистрирован");
         }
 
         if (!linkValidator.isValid(request.link())) {
@@ -54,8 +54,7 @@ public class DefaultLinksService implements LinksService {
         }
 
         if (linksRepository.findByChatIdAndUrl(chatId, request.link()).isPresent()) {
-            throw new LinkAlreadyExistsException(
-                    "Ссылка %s для чата %d уже существует".formatted(request.link(), chatId));
+            throw new LinkAlreadyExistsException("Ссылка %s для чата уже существует".formatted(request.link()));
         }
 
         Link link = new Link(null, chatId, request.link(), request.tags(), OffsetDateTime.now());
@@ -66,7 +65,7 @@ public class DefaultLinksService implements LinksService {
     @Override
     public LinkResponse removeLink(Long chatId, RemoveLinkRequest removeLinkRequest) {
         if (tgChatRepository.findByChatId(chatId).isEmpty()) {
-            throw new ChatNotFoundException("Чат с ID %d не зарегистрирован".formatted(chatId));
+            throw new ChatNotFoundException("Чат не зарегистрирован");
         }
 
         if (!linkValidator.isValid(removeLinkRequest.link())) {
