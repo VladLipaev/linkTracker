@@ -31,8 +31,10 @@ public class StackOverflowClient {
                 throw new StackOverflowException(
                         "StackOverflow API error: Тело ответа не соответствует заявленной схеме");
             }
+            ClientRequestLogging.handleRequestSuccess("Успешный запрос в SO", "stack_overflow_request", "success");
             return response;
         } catch (RestClientException e) {
+            ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
             throw new StackOverflowException("StackOverflow API error: " + e.getMessage());
         }
     }

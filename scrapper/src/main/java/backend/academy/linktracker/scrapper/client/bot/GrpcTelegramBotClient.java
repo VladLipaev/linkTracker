@@ -26,7 +26,11 @@ public class GrpcTelegramBotClient implements TelegramBotRestClient {
                     .setUrl(linkUpdate.url())
                     .addAllTgChatIds(linkUpdate.tgChatIds())
                     .build());
-
+            log.atInfo()
+                    .setMessage("Успешный запрос к сервису бота")
+                    .addKeyValue("event.type", "telegram_bot_request")
+                    .addKeyValue("event.status", "success")
+                    .log();
         } catch (StatusRuntimeException e) {
             throw handleException(e);
         }

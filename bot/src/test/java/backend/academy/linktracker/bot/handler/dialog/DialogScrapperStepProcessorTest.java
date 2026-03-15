@@ -10,8 +10,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
-import backend.academy.linktracker.bot.client.scrapper.ScrapperRestClient;
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
@@ -26,8 +26,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DialogStepProcessorTest {
-    private DialogStepProcessor processor;
+class DialogScrapperStepProcessorTest {
+    private DialogScrapperStepProcessor processor;
 
     private DialogManager dialogManager = new DialogManager(); // InMemory, можно настоящий
 
@@ -35,7 +35,7 @@ class DialogStepProcessorTest {
     private TelegramClientFacade telegramClient;
 
     @Mock
-    private ScrapperRestClient scrapperClient;
+    private ScrapperClient scrapperClient;
 
     private BotLinkValidator validator = new BotLinkValidator();
 
@@ -43,7 +43,7 @@ class DialogStepProcessorTest {
     void setUp() {
         dialogManager = new DialogManager();
         validator = new BotLinkValidator();
-        processor = new DialogStepProcessor(dialogManager, telegramClient, scrapperClient, validator);
+        processor = new DialogScrapperStepProcessor(dialogManager, telegramClient, scrapperClient, validator);
     }
 
     @Test

@@ -2,7 +2,7 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.handler.dialog.DialogManager;
-import backend.academy.linktracker.bot.handler.dialog.DialogStepProcessor;
+import backend.academy.linktracker.bot.handler.dialog.DialogScrapperStepProcessor;
 import backend.academy.linktracker.bot.handler.dialog.UserSession;
 import backend.academy.linktracker.bot.handler.dialog.UserState;
 import backend.academy.linktracker.bot.handler.logging.TelegramDispatcherLogging;
@@ -22,7 +22,7 @@ public class TelegramUpdateDispatcher {
     private final List<CommandHandler> commandHandlers;
     private final UnknownCommandHandler unknownCommandHandler;
     private final DialogManager dialogManager;
-    private final DialogStepProcessor dialogStepProcessor;
+    private final DialogScrapperStepProcessor dialogScrapperStepProcessor;
     private final TelegramClientFacade telegramClientFacade;
 
     private Map<String, CommandHandler> handlerMap;
@@ -51,7 +51,7 @@ public class TelegramUpdateDispatcher {
             if (text.startsWith("/")) {
                 handleCommand(update, text, session, startTime);
             } else if (session.state() != UserState.BASE) {
-                dialogStepProcessor.process(update, session);
+                dialogScrapperStepProcessor.process(update, session);
             } else {
                 unknownCommandHandler.handle(update);
                 TelegramDispatcherLogging.UnknownCommandHandled(updateId, chatId, text, startTime);

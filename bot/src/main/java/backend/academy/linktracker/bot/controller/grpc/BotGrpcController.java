@@ -8,9 +8,9 @@ import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Controller;
 
-@Service
+@Controller
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "grpc")
 public class BotGrpcController extends BotUpdateServiceGrpc.BotUpdateServiceImplBase {

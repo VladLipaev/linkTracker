@@ -15,7 +15,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RestClientScrapperRestClient implements ScrapperRestClient {
+public class RestClientScrapperRestClient implements ScrapperClient {
 
     private final RestClient restClient;
 
@@ -87,6 +87,6 @@ public class RestClientScrapperRestClient implements ScrapperRestClient {
                 .addKeyValue("exception_name", error != null ? error.exceptionName() : "N/A")
                 .log();
 
-        return new ScrapperClientException(description);
+        return new ScrapperClientException(description, e);
     }
 }

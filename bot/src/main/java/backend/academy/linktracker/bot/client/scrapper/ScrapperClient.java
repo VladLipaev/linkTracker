@@ -4,7 +4,7 @@ import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
 import java.util.List;
 
-public interface ScrapperRestClient {
+public interface ScrapperClient {
     void registerChat(long chatId);
 
     LinkResponse addLink(long chatId, String link, List<String> tags);

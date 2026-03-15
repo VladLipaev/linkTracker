@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindException;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,17 +22,8 @@ public class BotRestController {
     private final TelegramUpdateService telegramUpdateService;
 
     @PostMapping
-    public ResponseEntity<Void> postUpdate(@Valid @RequestBody LinkUpdate linkUpdate, BindingResult bindingResult)
-            throws BindException {
-        if (bindingResult.hasErrors()) {
-            if (bindingResult instanceof BindException e) {
-                throw e;
-            } else {
-                throw new BindException(bindingResult);
-            }
-        } else {
-            telegramUpdateService.postUpdate(linkUpdate);
-            return ResponseEntity.ok().build();
-        }
+    public ResponseEntity<Void> postUpdate(@Valid @RequestBody LinkUpdate linkUpdate) {
+        telegramUpdateService.postUpdate(linkUpdate);
+        return ResponseEntity.ok().build();
     }
 }

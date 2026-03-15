@@ -9,8 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindException;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,31 +34,13 @@ public class LinksRestController {
 
     @PostMapping
     public ResponseEntity<LinkResponse> addLink(
-            @RequestHeader("Tg-Chat-Id") Long chatId,
-            @Valid @RequestBody AddLinkRequest addLinkRequest,
-            BindingResult bindingResult)
-            throws BindException {
-        validateRequestBody(bindingResult);
+            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody AddLinkRequest addLinkRequest) {
         return ResponseEntity.ok(this.linksService.addLink(chatId, addLinkRequest));
     }
 
     @DeleteMapping
     public ResponseEntity<LinkResponse> removeLink(
-            @RequestHeader("Tg-Chat-Id") Long chatId,
-            @Valid @RequestBody RemoveLinkRequest removeLinkRequest,
-            BindingResult bindingResult)
-            throws BindException {
-        validateRequestBody(bindingResult);
+            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody RemoveLinkRequest removeLinkRequest) {
         return ResponseEntity.ok(this.linksService.removeLink(chatId, removeLinkRequest));
-    }
-
-    private void validateRequestBody(BindingResult bindingResult) throws BindException {
-        if (bindingResult.hasErrors()) {
-            if (bindingResult instanceof BindException e) {
-                throw e;
-            } else {
-                throw new BindException(bindingResult);
-            }
-        }
     }
 }

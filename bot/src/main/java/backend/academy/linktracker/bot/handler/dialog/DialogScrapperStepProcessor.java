@@ -1,7 +1,7 @@
 package backend.academy.linktracker.bot.handler.dialog;
 
+import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
-import backend.academy.linktracker.bot.client.scrapper.ScrapperRestClient;
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
@@ -15,10 +15,10 @@ import org.springframework.web.client.ResourceAccessException;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DialogStepProcessor {
+public class DialogScrapperStepProcessor {
     private final DialogManager dialogManager;
     private final TelegramClientFacade telegramClientFacade;
-    private final ScrapperRestClient scrapperClient;
+    private final ScrapperClient scrapperClient;
     private final BotLinkValidator linkValidator;
 
     public void process(Update update, UserSession session) {

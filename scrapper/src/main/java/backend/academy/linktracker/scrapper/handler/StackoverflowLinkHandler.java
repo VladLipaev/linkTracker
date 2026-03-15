@@ -15,16 +15,16 @@ import org.springframework.stereotype.Component;
 public class StackoverflowLinkHandler implements LinkHandler {
 
     private final StackOverflowClient stackOverflowClient;
-    private static final Pattern pattern = Pattern.compile("^https://stackoverflow\\.com/questions/(?<id>\\d+)(/.*)?$");
+    private static final Pattern PATTERN = Pattern.compile("^https://stackoverflow\\.com/questions/(?<id>\\d+)(/.*)?$");
 
     @Override
     public boolean supports(String url) {
-        return pattern.matcher(url).matches();
+        return PATTERN.matcher(url).matches();
     }
 
     @Override
     public OffsetDateTime fetchUpdate(String url) throws IllegalArgumentException {
-        Matcher matcher = pattern.matcher(url);
+        Matcher matcher = PATTERN.matcher(url);
         if (matcher.matches()) {
             String questionId = matcher.group("id");
             StackOverflowResponse response = stackOverflowClient.fetchQuestion(questionId);

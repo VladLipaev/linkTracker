@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "grpc")
-public class GrpcScrapperClient implements ScrapperRestClient {
+public class GrpcScrapperClient implements ScrapperClient {
 
     private final ScrapperServiceGrpc.ScrapperServiceBlockingStub scrapperStub;
 
@@ -85,6 +85,6 @@ public class GrpcScrapperClient implements ScrapperRestClient {
                 .addKeyValue("error.description", e.getStatus().getDescription())
                 .log();
         return new ScrapperClientException(
-                e.getStatus().getDescription() != null ? e.getStatus().getDescription() : "gRPC Error");
+                e.getStatus().getDescription() != null ? e.getStatus().getDescription() : "gRPC Error", e);
     }
 }

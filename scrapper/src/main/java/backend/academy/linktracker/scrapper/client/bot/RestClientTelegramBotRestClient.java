@@ -17,6 +17,11 @@ public class RestClientTelegramBotRestClient implements TelegramBotRestClient {
     public void sendUpdate(LinkUpdate linkUpdate) {
         try {
             restClient.post().uri("/updates").body(linkUpdate).retrieve().toBodilessEntity();
+            log.atInfo()
+                    .setMessage("Успешный запрос к сервису бота")
+                    .addKeyValue("event.type", "telegram_bot_request")
+                    .addKeyValue("event.status", "success")
+                    .log();
         } catch (RestClientResponseException e) {
             ApiErrorResponse response = e.getResponseBodyAs(ApiErrorResponse.class);
             if (e.getStatusCode().is4xxClientError()) {
