@@ -36,7 +36,7 @@ public class GrpcScrapperClient implements ScrapperClient {
                     .addAllTags(tags)
                     .build();
 
-            var response = scrapperStub.addLink(request);
+            backend.academy.linktracker.grpc.scrapper.LinkResponse response = scrapperStub.addLink(request);
 
             return new LinkResponse(response.getId(), response.getUrl(), response.getTagsList());
         } catch (StatusRuntimeException e) {
@@ -47,10 +47,12 @@ public class GrpcScrapperClient implements ScrapperClient {
     @Override
     public ListLinksResponse getLinks(long chatId, String tag) {
         try {
-            var requestBuilder = GetLinksRequest.newBuilder().setChatId(chatId);
-            if (tag != null) requestBuilder.setTag(tag);
-
-            var response = scrapperStub.getLinks(requestBuilder.build());
+            GetLinksRequest.Builder requestBuilder = GetLinksRequest.newBuilder().setChatId(chatId);
+            if (tag != null){
+                requestBuilder.setTag(tag);
+            }
+            backend.academy.linktracker.grpc.scrapper.ListLinksResponse response = scrapperStub
+                .getLinks(requestBuilder.build());
 
             List<LinkResponse> links = response.getLinksList().stream()
                     .map(l -> new LinkResponse(l.getId(), l.getUrl(), l.getTagsList()))
@@ -65,11 +67,11 @@ public class GrpcScrapperClient implements ScrapperClient {
     @Override
     public LinkResponse removeLink(long chatId, String url) {
         try {
-            var requestBuilder = RemoveLinkRequest.newBuilder()
+            RemoveLinkRequest requestBuilder = RemoveLinkRequest.newBuilder()
                     .setChatId(chatId)
                     .setLink(url)
                     .build();
-            var response = scrapperStub.removeLink(requestBuilder);
+            backend.academy.linktracker.grpc.scrapper.LinkResponse response = scrapperStub.removeLink(requestBuilder);
 
             LinkResponse linkResponse = new LinkResponse(response.getId(), response.getUrl(), response.getTagsList());
             return linkResponse;

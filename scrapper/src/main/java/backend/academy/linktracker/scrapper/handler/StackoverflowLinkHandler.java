@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 public class StackoverflowLinkHandler implements LinkHandler {
 
     private final StackOverflowClient stackOverflowClient;
-    private static final Pattern PATTERN = Pattern.compile("^https://stackoverflow\\.com/questions/(?<id>\\d+)(/.*)?$");
+    private static final Pattern PATTERN = Pattern.compile(
+        "^https://stackoverflow\\.com/questions/(?<id>\\d+)(/.*)?$"
+    );
 
     @Override
     public boolean supports(String url) {
@@ -30,8 +32,8 @@ public class StackoverflowLinkHandler implements LinkHandler {
             StackOverflowResponse response = stackOverflowClient.fetchQuestion(questionId);
 
             if (response != null
-                    && response.items() != null
-                    && !response.items().isEmpty()) {
+                && response.items() != null
+                && !response.items().isEmpty()) {
                 long seconds = response.items().getFirst().lastActivityDate();
 
                 return Instant.ofEpochSecond(seconds).atOffset(ZoneOffset.UTC);

@@ -39,15 +39,17 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
 
     @Override
     public void addLink(AddLinkRequest request, StreamObserver<LinkResponse> responseObserver) {
-        var dtoRequest =
-                new backend.academy.linktracker.scrapper.dto.AddLinkRequest(request.getLink(), request.getTagsList());
+        var dtoRequest = new backend.academy.linktracker.scrapper.dto.AddLinkRequest(
+            request.getLink(),
+            request.getTagsList()
+        );
         var result = linksService.addLink(request.getChatId(), dtoRequest);
 
         LinkResponse response = LinkResponse.newBuilder()
-                .setId(result.id())
-                .setUrl(result.url())
-                .addAllTags(result.tags())
-                .build();
+            .setId(result.id())
+            .setUrl(result.url())
+            .addAllTags(result.tags())
+            .build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
@@ -59,14 +61,14 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
         var result = linksService.getAllLinks(request.getChatId(), tag);
 
         ListLinksResponse.Builder responseBuilder =
-                ListLinksResponse.newBuilder().setSize(result.size());
+            ListLinksResponse.newBuilder().setSize(result.size());
 
         result.links()
-                .forEach(link -> responseBuilder.addLinks(LinkResponse.newBuilder()
-                        .setId(link.id())
-                        .setUrl(link.url())
-                        .addAllTags(link.tags())
-                        .build()));
+            .forEach(link -> responseBuilder.addLinks(LinkResponse.newBuilder()
+                .setId(link.id())
+                .setUrl(link.url())
+                .addAllTags(link.tags())
+                .build()));
 
         responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
@@ -75,13 +77,13 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
     @Override
     public void removeLink(RemoveLinkRequest request, StreamObserver<LinkResponse> responseObserver) {
         var result = this.linksService.removeLink(
-                request.getChatId(), new backend.academy.linktracker.scrapper.dto.RemoveLinkRequest(request.getLink()));
+            request.getChatId(), new backend.academy.linktracker.scrapper.dto.RemoveLinkRequest(request.getLink()));
 
         LinkResponse response = LinkResponse.newBuilder()
-                .setId(result.id())
-                .setUrl(result.url())
-                .addAllTags(result.tags())
-                .build();
+            .setId(result.id())
+            .setUrl(result.url())
+            .addAllTags(result.tags())
+            .build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();

@@ -16,16 +16,16 @@ public class GitHubClient {
     public GitHubRepoResponse fetchRepo(String owner, String repo) {
         try {
             GitHubRepoResponse response = restClient
-                    .get()
-                    .uri("/repos/{owner}/{repo}", owner, repo)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
-                        throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
-                    })
-                    .body(GitHubRepoResponse.class);
+                .get()
+                .uri("/repos/{owner}/{repo}", owner, repo)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
+                })
+                .body(GitHubRepoResponse.class);
             if (response == null || response.updatedAt() == null) {
                 throw new GitHubClientException(
-                        "GitHub API error: Тело ответа не соответствует заявленной схеме (отсутствует updatedAt)");
+                    "GitHub API error: Тело ответа не соответствует заявленной схеме (отсутствует updatedAt)");
             }
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в github", "github_request", "success");
             return response;

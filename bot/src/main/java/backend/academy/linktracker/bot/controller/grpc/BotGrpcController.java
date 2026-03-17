@@ -20,7 +20,11 @@ public class BotGrpcController extends BotUpdateServiceGrpc.BotUpdateServiceImpl
     @Override
     public void sendUpdate(LinkUpdateRequest request, StreamObserver<Empty> responseObserver) {
         LinkUpdate linkUpdate =
-                new LinkUpdate(request.getId(), request.getUrl(), request.getDescription(), request.getTgChatIdsList());
+                new LinkUpdate(
+                    request.getId(),
+                    request.getUrl(),
+                    request.getDescription(),
+                    request.getTgChatIdsList());
         telegramUpdateService.postUpdate(linkUpdate);
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();

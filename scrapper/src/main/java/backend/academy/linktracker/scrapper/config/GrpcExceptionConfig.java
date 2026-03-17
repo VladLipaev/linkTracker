@@ -22,20 +22,17 @@ public class GrpcExceptionConfig {
             case ChatNotFoundException e ->
                 new StatusException(Status.NOT_FOUND.withDescription("Чат не существует: " + e.getMessage()));
 
-            case UnsupportedLinkException e ->
-                new StatusException(
-                        Status.INVALID_ARGUMENT.withDescription("Неподдерживаемая ссылка: " + e.getMessage()));
+            case UnsupportedLinkException e -> new StatusException(
+                Status.INVALID_ARGUMENT.withDescription("Неподдерживаемая ссылка: " + e.getMessage()));
 
-            case LinkAlreadyExistsException e ->
-                new StatusException(
-                        Status.ALREADY_EXISTS.withDescription("Уже существующая ссылка: " + e.getMessage()));
+            case LinkAlreadyExistsException e -> new StatusException(
+                Status.ALREADY_EXISTS.withDescription("Уже существующая ссылка: " + e.getMessage()));
 
             case NoSuchElementException e ->
                 new StatusException(Status.NOT_FOUND.withDescription("Данный элемент не найден: " + e.getMessage()));
-            default ->
-                new StatusException(Status.INTERNAL
-                        .withDescription("Внутренняя ошибка сервера: " + ex.getMessage())
-                        .withCause(ex));
+            default -> new StatusException(Status.INTERNAL
+                .withDescription("Внутренняя ошибка сервера: " + ex.getMessage())
+                .withCause(ex));
         };
     }
 }

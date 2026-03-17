@@ -37,7 +37,11 @@ public class DialogScrapperStepProcessor {
                     } else {
                         telegramClientFacade.sendMessage(
                                 chatId,
-                                "Некорректная ссылка! \nЯ поддерживаю только GitHub (репозитории) и StackOverflow (вопросы). \nПопробуйте еще раз или введите /cancel.");
+                            """
+                                Некорректная ссылка!\s
+                                Я поддерживаю только GitHub (репозитории) \
+                                и StackOverflow (вопросы).\s
+                                Попробуйте еще раз или введите /cancel.""");
                     }
                 }
                 // находится в состоянии ожидания ссылки чтобы ее удалить
@@ -50,7 +54,11 @@ public class DialogScrapperStepProcessor {
                     } else {
                         telegramClientFacade.sendMessage(
                                 chatId,
-                                "Некорректная ссылка! \nЯ поддерживаю только GitHub (репозитории) и StackOverflow (вопросы). \nПопробуйте еще раз или введите /cancel.");
+                            """
+                                Некорректная ссылка!\s
+                                Я поддерживаю только GitHub (репозитории)\
+                                 и StackOverflow (вопросы).\s
+                                Попробуйте еще раз или введите /cancel.""");
                     }
                 }
                 // находится в состоянии ожидания тегов
@@ -73,7 +81,9 @@ public class DialogScrapperStepProcessor {
 
                     if (response.links().isEmpty()) {
                         telegramClientFacade.sendMessage(
-                                chatId, "У вас нет отслеживаемых ссылок" + (tag != null ? " с тегом " + tag : ""));
+                                chatId,
+                            "У вас нет отслеживаемых ссылок" + (tag != null ? " с тегом " + tag : "")
+                        );
                     } else {
                         StringBuilder sb = new StringBuilder("Ваши ссылки:\n");
                         response.links().forEach(link -> sb.append(link.url()).append("\n"));
@@ -103,7 +113,9 @@ public class DialogScrapperStepProcessor {
                     .addKeyValue("chat_id", chatId)
                     .setCause(e)
                     .log();
-            telegramClientFacade.sendMessage(chatId, "Сервис отслеживания временно недоступен. Попробуйте позже.");
+            telegramClientFacade.sendMessage(
+                chatId,
+                "Сервис отслеживания временно недоступен. Попробуйте позже.");
             dialogManager.setSession(chatId, UserSession.base());
         }
     }

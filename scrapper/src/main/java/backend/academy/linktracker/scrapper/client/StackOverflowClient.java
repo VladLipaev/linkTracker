@@ -16,25 +16,33 @@ public class StackOverflowClient {
     public StackOverflowResponse fetchQuestion(String id) {
         try {
             StackOverflowResponse response = this.restClient
-                    .get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/questions/{id}")
-                            .queryParam("site", "stackoverflow")
-                            .queryParam("key", properties.getKey())
-                            .build(id))
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
-                        throw new StackOverflowException("StackOverflow API error: " + res.getStatusCode());
-                    })
-                    .body(StackOverflowResponse.class);
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/questions/{id}")
+                    .queryParam("site", "stackoverflow")
+                    .queryParam("key", properties.getKey())
+                    .build(id))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    throw new StackOverflowException("StackOverflow API error: " + res.getStatusCode());
+                })
+                .body(StackOverflowResponse.class);
             if (response == null || response.items() == null) {
                 throw new StackOverflowException(
-                        "StackOverflow API error: Тело ответа не соответствует заявленной схеме");
+                    "StackOverflow API error: Тело ответа не соответствует заявленной схеме");
             }
-            ClientRequestLogging.handleRequestSuccess("Успешный запрос в SO", "stack_overflow_request", "success");
+            ClientRequestLogging.handleRequestSuccess(
+                "Успешный запрос в SO",
+                "stack_overflow_request",
+                "success"
+            );
             return response;
         } catch (RestClientException e) {
-            ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
+            ClientRequestLogging.handleRequestFailure(
+                "Неудачный запрос в SO",
+                "stack_overflow_request",
+                "failure", e
+            );
             throw new StackOverflowException("StackOverflow API error: " + e.getMessage());
         }
     }

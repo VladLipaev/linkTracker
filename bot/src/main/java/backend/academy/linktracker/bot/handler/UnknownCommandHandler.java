@@ -14,6 +14,7 @@ public class UnknownCommandHandler {
     public void handle(Update update) {
         long chatId = update.message().chat().id();
         telegramClientFacade.sendMessage(
-                chatId, "Неизвестная команда. Воспользуйтесь " + "/help, чтобы посмотреть список доступных команд.");
+                chatId,
+            "Неизвестная команда. Воспользуйтесь " + "/help, чтобы посмотреть список доступных команд.");
     }
 }
