@@ -19,11 +19,8 @@ public class CommandRegistry {
     public void initCommands() {
         BotCommand[] botCommands = commandHandlers.stream()
                 .filter(command -> !command.getCommandName().isBlank() && command.isEnabled())
-                .map(handler -> new BotCommand(
-                    handler.getCommandName()
-                        .substring(1)
-                        .toLowerCase(),
-                    handler.getDescription()))
+                .map(handler ->
+                        new BotCommand(handler.getCommandName().substring(1).toLowerCase(), handler.getDescription()))
                 .toArray(BotCommand[]::new);
 
         BaseResponse response = facade.setBotCommands(botCommands);

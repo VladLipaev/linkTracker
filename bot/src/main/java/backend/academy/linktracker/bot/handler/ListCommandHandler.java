@@ -21,8 +21,7 @@ public class ListCommandHandler implements CommandHandler {
         long chatId = update.message().chat().id();
         telegramClientFacade.sendMessage(
                 chatId,
-                "Введите тег, по которому хотите получить"
-                + " ссылки, либо введите skip чтобы получить их все");
+                "Введите тег, по которому хотите получить" + " ссылки, либо введите skip чтобы получить их все");
         dialogManager.setSession(chatId, new UserSession(UserState.WAITING_FOR_LIST_TAG, null));
     }
 

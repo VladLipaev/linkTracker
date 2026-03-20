@@ -52,5 +52,8 @@ build/
 ### Mac OS ###
 .DS_Store
 
-### API TOKEN ###
+### API BOT TOKEN ###
 bot/.env
+
+### ENV ###
+*.env

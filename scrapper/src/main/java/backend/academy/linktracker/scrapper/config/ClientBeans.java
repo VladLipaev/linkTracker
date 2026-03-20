@@ -17,26 +17,26 @@ public class ClientBeans {
     @Bean
     @ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
     public RestClientTelegramBotRestClient restClientTelegramBotRestClient(
-        @Value("${app.bot.uri:http://localhost:8080}") String botBaseUri) {
-        return new RestClientTelegramBotRestClient(RestClient.builder()
-            .baseUrl(botBaseUri)
-            .build());
+            @Value("${app.bot.uri:http://localhost:8080}") String botBaseUri) {
+        return new RestClientTelegramBotRestClient(
+                RestClient.builder().baseUrl(botBaseUri).build());
     }
 
     @Bean
     public GitHubClient gitHubClient(GithubProperties githubProperties) {
         return new GitHubClient(RestClient.builder()
-            .baseUrl("https://api.github.com")
-            .defaultHeader("Authorization", "Bearer " + githubProperties.getToken())
-            .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
-            .build());
+                .baseUrl("https://api.github.com")
+                .defaultHeader("Authorization", "Bearer " + githubProperties.getToken())
+                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+                .build());
     }
 
     @Bean
     public StackOverflowClient stackOverflowClient(StackoverflowProperties stackoverflowProperties) {
-        return new StackOverflowClient(RestClient.builder()
-            .baseUrl("https://api.stackexchange.com/2.3")
-            .build(),
-            stackoverflowProperties);
+        return new StackOverflowClient(
+                RestClient.builder()
+                        .baseUrl("https://api.stackexchange.com/2.3")
+                        .build(),
+                stackoverflowProperties);
     }
 }

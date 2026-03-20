@@ -1,15 +1,5 @@
 package backend.academy.linktracker.scrapper.repository;
 
-import java.util.Optional;
-import java.util.Set;
+import backend.academy.linktracker.scrapper.entity.Chat;
 
-public interface TgChatRepository {
-
-    boolean save(Long chatId);
-
-    boolean delete(Long id);
-
-    Optional<Long> findByChatId(Long chatId);
-
-    Set<Long> findAll();
-}
+public interface TgChatRepository extends BaseRepository<Chat, Long> {}

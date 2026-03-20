@@ -47,12 +47,13 @@ public class GrpcScrapperClient implements ScrapperClient {
     @Override
     public ListLinksResponse getLinks(long chatId, String tag) {
         try {
-            GetLinksRequest.Builder requestBuilder = GetLinksRequest.newBuilder().setChatId(chatId);
-            if (tag != null){
+            GetLinksRequest.Builder requestBuilder =
+                    GetLinksRequest.newBuilder().setChatId(chatId);
+            if (tag != null) {
                 requestBuilder.setTag(tag);
             }
-            backend.academy.linktracker.grpc.scrapper.ListLinksResponse response = scrapperStub
-                .getLinks(requestBuilder.build());
+            backend.academy.linktracker.grpc.scrapper.ListLinksResponse response =
+                    scrapperStub.getLinks(requestBuilder.build());
 
             List<LinkResponse> links = response.getLinksList().stream()
                     .map(l -> new LinkResponse(l.getId(), l.getUrl(), l.getTagsList()))

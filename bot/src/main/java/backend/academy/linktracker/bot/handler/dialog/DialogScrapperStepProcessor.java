@@ -35,9 +35,7 @@ public class DialogScrapperStepProcessor {
                         telegramClientFacade.sendMessage(
                                 chatId, "Ссылка принята. Теперь введите теги через запятую или напишите skip");
                     } else {
-                        telegramClientFacade.sendMessage(
-                                chatId,
-                            """
+                        telegramClientFacade.sendMessage(chatId, """
                                 Некорректная ссылка!\s
                                 Я поддерживаю только GitHub (репозитории) \
                                 и StackOverflow (вопросы).\s
@@ -52,9 +50,7 @@ public class DialogScrapperStepProcessor {
                                 chatId, "Готово! Ссылка %s удалена из отслеживания.".formatted(linkResponse.url()));
                         dialogManager.setSession(chatId, UserSession.base());
                     } else {
-                        telegramClientFacade.sendMessage(
-                                chatId,
-                            """
+                        telegramClientFacade.sendMessage(chatId, """
                                 Некорректная ссылка!\s
                                 Я поддерживаю только GitHub (репозитории)\
                                  и StackOverflow (вопросы).\s
@@ -81,9 +77,7 @@ public class DialogScrapperStepProcessor {
 
                     if (response.links().isEmpty()) {
                         telegramClientFacade.sendMessage(
-                                chatId,
-                            "У вас нет отслеживаемых ссылок" + (tag != null ? " с тегом " + tag : "")
-                        );
+                                chatId, "У вас нет отслеживаемых ссылок" + (tag != null ? " с тегом " + tag : ""));
                     } else {
                         StringBuilder sb = new StringBuilder("Ваши ссылки:\n");
                         response.links().forEach(link -> sb.append(link.url()).append("\n"));
@@ -113,9 +107,7 @@ public class DialogScrapperStepProcessor {
                     .addKeyValue("chat_id", chatId)
                     .setCause(e)
                     .log();
-            telegramClientFacade.sendMessage(
-                chatId,
-                "Сервис отслеживания временно недоступен. Попробуйте позже.");
+            telegramClientFacade.sendMessage(chatId, "Сервис отслеживания временно недоступен. Попробуйте позже.");
             dialogManager.setSession(chatId, UserSession.base());
         }
     }

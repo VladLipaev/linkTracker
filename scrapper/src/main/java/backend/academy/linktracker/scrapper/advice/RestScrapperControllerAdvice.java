@@ -25,85 +25,53 @@ public class RestScrapperControllerAdvice {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleTypeMismatch(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.BAD_REQUEST,
-            "Некорректные параметры запроса: неверный формат ID"
-        );
+        return createResponse(ex, HttpStatus.BAD_REQUEST, "Некорректные параметры запроса: неверный формат ID");
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ApiErrorResponse> handleMissingHeader(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.BAD_REQUEST,
-            "Некорректные параметры запроса: отсутствует заголовок"
-        );
+        return createResponse(ex, HttpStatus.BAD_REQUEST, "Некорректные параметры запроса: отсутствует заголовок");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.BAD_REQUEST,
-            "Некорректные параметры запроса: тело сообщения не читаемо"
-        );
+        return createResponse(ex, HttpStatus.BAD_REQUEST, "Некорректные параметры запроса: тело сообщения не читаемо");
     }
 
     @ExceptionHandler(ChatNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleChatNotExists(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.NOT_FOUND,
-            "Чат не существует"
-        );
+        return createResponse(ex, HttpStatus.NOT_FOUND, "Чат не существует");
     }
 
     @ExceptionHandler(UnsupportedLinkException.class)
     public ResponseEntity<ApiErrorResponse> handleUnsupportedLink(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.BAD_REQUEST,
-            "Неподдерживаемая ссылка"
-        );
+        return createResponse(ex, HttpStatus.BAD_REQUEST, "Неподдерживаемая ссылка");
     }
 
     @ExceptionHandler(LinkAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleLinkAlreadyExists(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.CONFLICT,
-            "Уже существующая ссылка"
-        );
+        return createResponse(ex, HttpStatus.CONFLICT, "Уже существующая ссылка");
     }
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiErrorResponse> handleBindException(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.BAD_REQUEST,
-            "Некоректные параметры запроса"
-        );
+        return createResponse(ex, HttpStatus.BAD_REQUEST, "Некоректные параметры запроса");
     }
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ApiErrorResponse> handleNoSuchElementException(Exception ex) {
-        return createResponse(
-            ex,
-            HttpStatus.NOT_FOUND,
-            "Данный элемент не найден"
-        );
+        return createResponse(ex, HttpStatus.NOT_FOUND, "Данный элемент не найден");
     }
 
     private ResponseEntity<ApiErrorResponse> createResponse(Exception ex, HttpStatus status, String description) {
         ApiErrorResponse error = new ApiErrorResponse(
-            description,
-            String.valueOf(status.value()),
-            ex.getClass().getSimpleName(),
-            ex.getMessage(),
-            Arrays.stream(ex.getStackTrace())
-                .map(StackTraceElement::toString)
-                .toList());
+                description,
+                String.valueOf(status.value()),
+                ex.getClass().getSimpleName(),
+                ex.getMessage(),
+                Arrays.stream(ex.getStackTrace())
+                        .map(StackTraceElement::toString)
+                        .toList());
         return ResponseEntity.status(status).body(error);
     }
 }

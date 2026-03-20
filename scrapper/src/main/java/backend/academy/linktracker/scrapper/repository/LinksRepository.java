@@ -4,24 +4,18 @@ import backend.academy.linktracker.scrapper.entity.Link;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
-public interface LinksRepository {
-
-    List<Link> findAllByChatId(Long chatId);
-
-    Link save(Link link);
-
-    Optional<Link> findByChatIdAndUrl(Long chatId, String url);
-
-    List<String> findAllUniqueUrls();
-
-    Optional<Link> getAnyLinkByUrl(String url);
+public interface LinksRepository extends BaseRepository<Link, Long> {
 
     List<Long> findAllChatIdsByUrl(String url);
 
+    Slice<Long> findAllChatIdsByUrl(String url, Pageable pageable);
+
     void updateLastUpdatedByUrl(String url, OffsetDateTime lastUpdateFromApi);
 
-    List<Link> findAllByChatIdAndTag(Long chatId, String tag);
+    Optional<Link> findByChatIdAndUrl(Long chatId, String url);
 
-    Optional<Link> deleteByChatIdAndUrl(Long chatId, String link);
+    Optional<Link> findByUrl(String url);
 }

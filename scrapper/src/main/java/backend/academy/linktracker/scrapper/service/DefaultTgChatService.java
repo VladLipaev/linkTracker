@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.service;
 
+import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,16 +13,19 @@ public class DefaultTgChatService implements TgChatService {
 
     @Override
     public void addTgChat(Long chatId) {
-        boolean isNew = tgChatRepository.save(chatId);
-        if (!isNew) {
+        if (tgChatRepository.existsById(chatId)) {
             throw new ChatAlreadyExistsException("Чат уже зарегистрирован");
+        } else {
+            tgChatRepository.save(new Chat(chatId));
         }
     }
 
     @Override
     public void deleteTgChat(Long chatId) {
-        boolean isGone = this.tgChatRepository.delete(chatId);
-        if (!isGone) {
+
+        if (tgChatRepository.existsById(chatId)) {
+            this.tgChatRepository.deleteById(chatId);
+        } else {
             throw new ChatNotFoundException("Чат не существует");
         }
     }

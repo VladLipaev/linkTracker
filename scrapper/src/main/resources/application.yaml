@@ -11,7 +11,12 @@ spring:
       default-channel:
         address: 'static://localhost:9080'
         negotiation-type: plaintext
-
+  datasource:
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    show-sql: true
 app:
   stackoverflow:
     key: ${STACKOVERFLOW_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
@@ -21,9 +26,11 @@ app:
   bot:
     uri: http://localhost:8080
   scheduler:
-    interval: 20s
+    interval: 30s
   communication:
     mode: grpc # rest
+  db:
+    access-type: ORM
 
 
 logging:

@@ -1,0 +1,34 @@
+name: link-tracker
+services:
+  postgresql:
+    container_name: link-tracker-db
+    image: postgres:17
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  liquibase-migrations:
+    container_name: lt_migrations
+    image: liquibase/liquibase:4.29
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    command:
+      - --log-level=debug
+      - --searchPath=/changesets
+      - --changelog-file=db.changelog-master.xml
+      - --driver=org.postgresql.Driver
+      - --url=jdbc:postgresql://postgresql:5432/postgres
+      - --username=postgres
+      - --password=postgres
+      - update
+    volumes:
+      - ./migrations:/changesets

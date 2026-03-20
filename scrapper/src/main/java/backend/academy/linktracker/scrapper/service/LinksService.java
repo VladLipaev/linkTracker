@@ -2,8 +2,11 @@ package backend.academy.linktracker.scrapper.service;
 
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
+import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
+import backend.academy.linktracker.scrapper.entity.Link;
+import java.util.Optional;
 
 public interface LinksService {
     ListLinksResponse getAllLinks(Long chatId, String tag);
@@ -11,4 +14,6 @@ public interface LinksService {
     LinkResponse addLink(Long chatId, AddLinkRequest addLinkRequest);
 
     LinkResponse removeLink(Long chatId, RemoveLinkRequest removeLinkRequest);
+
+    Optional<LinkUpdate> processLink(Link link);
 }
