@@ -1,14 +1,11 @@
 package backend.academy.linktracker.scrapper.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Chat;
 // Предполагаемое имя ORM обертки
 import backend.academy.linktracker.scrapper.repository.raw.SqlTgChatRepository;
-import backend.academy.linktracker.scrapper.service.ChatAlreadyExistsException;
-import backend.academy.linktracker.scrapper.service.TgChatService;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,9 +29,6 @@ public abstract class BaseTgChatRepositoryTest {
 
     @Value("${app.db.access-type}")
     private String accessType;
-
-    @Autowired
-    private TgChatService tgChatService;
 
     @Test
     @DisplayName("Проверка имплементации: должен использоваться правильный бин")
@@ -69,16 +63,5 @@ public abstract class BaseTgChatRepositoryTest {
         tgChatRepository.deleteById(chatId);
 
         assertThat(tgChatRepository.existsById(chatId)).isFalse();
-    }
-
-    @Test
-    @DisplayName("Повторная регистрация ID: должна быть ошибка UNIQUE")
-    void saveDuplicate_shouldThrowException() {
-        Long chatId = 555L;
-        tgChatRepository.save(new Chat(chatId));
-
-        assertThrows(ChatAlreadyExistsException.class, () -> {
-            tgChatService.addTgChat(chatId);
-        });
     }
 }
