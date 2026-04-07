@@ -1,24 +1,22 @@
 package backend.academy.linktracker.scrapper.schedule;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
-import backend.academy.linktracker.scrapper.client.bot.TelegramBotRestClient;
-import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.entity.Link;
+import backend.academy.linktracker.scrapper.handler.UpdateResult;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
-import backend.academy.linktracker.scrapper.service.LinksService;
+import backend.academy.linktracker.scrapper.service.HttpNotificationUpdateSender;
+import backend.academy.linktracker.scrapper.service.LinkProcessorService;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,79 +29,94 @@ class LinkUpdaterSchedulerTest {
     private LinksRepository linksRepository;
 
     @Mock
-    private TelegramBotRestClient botClient;
+    private LinkProcessorService processorService;
 
     @Mock
-    private LinksService linksService;
+    private SchedulerProperties properties;
+
+    @Mock
+    private HttpNotificationUpdateSender httpNotificationUpdateSender;
 
     @BeforeEach
     public void setUp() {
-        linkUpdaterScheduler = new LinkUpdaterScheduler(linksRepository, botClient, linksService);
+        when(properties.threadCount()).thenReturn(2);
+        when(properties.batchSize()).thenReturn(10);
+
+        linkUpdaterScheduler =
+                new LinkUpdaterScheduler(linksRepository, processorService, properties, httpNotificationUpdateSender);
+
+        linkUpdaterScheduler.init();
     }
 
     @Test
-    public void update_whenLinksExistAndServiceReturnsUpdate_shouldSendUpdateToBot() {
-        String url = "https://github.com/user/repo";
-        Link link = new Link(url, OffsetDateTime.now().minusDays(1));
-        link.setId(1L);
-
-        LinkUpdate expectedUpdate = new LinkUpdate(link.getId(), url, "Новое обновление", List.of(10L, 20L));
-
-        when(linksRepository.findAll()).thenReturn(List.of(link));
-        when(linksService.processLink(link)).thenReturn(Optional.of(expectedUpdate));
-
-        linkUpdaterScheduler.update();
-
-        ArgumentCaptor<LinkUpdate> updateCaptor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(updateCaptor.capture());
-
-        LinkUpdate capturedUpdate = updateCaptor.getValue();
-        assertEquals(url, capturedUpdate.url());
-        assertEquals(expectedUpdate.tgChatIds(), capturedUpdate.tgChatIds());
-
-        verifyNoMoreInteractions(botClient);
-    }
-
-    @Test
-    public void update_whenServiceReturnsEmpty_shouldNotSendAnything() {
-        Link link = new Link("https://google.com", OffsetDateTime.now());
-        when(linksRepository.findAll()).thenReturn(List.of(link));
-        when(linksService.processLink(link)).thenReturn(Optional.empty());
-
-        linkUpdaterScheduler.update();
-
-        verifyNoInteractions(botClient);
-    }
-
-    @Test
-    public void update_whenRepositoryIsEmpty_shouldSkipProcessing() {
-
-        when(linksRepository.findAll()).thenReturn(List.of());
-
-        linkUpdaterScheduler.update();
-
-        verifyNoInteractions(linksService);
-        verifyNoInteractions(botClient);
-    }
-
-    @Test
-    public void update_whenServiceThrowsException_shouldContinueProcessingOtherLinks() {
+    public void update_whenLinksExistAndNeedUpdate_shouldProcessAndHandleResult() {
         // Arrange
-        Link failedLink = new Link("https://github.com/error", OffsetDateTime.now());
-        Link successLink = new Link("https://github.com/success", OffsetDateTime.now());
+        Link link1 = new Link("https://github.com/1", OffsetDateTime.now());
+        link1.setId(1L);
+        Link link2 = new Link("https://github.com/2", OffsetDateTime.now());
+        link2.setId(2L);
 
-        when(linksRepository.findAll()).thenReturn(List.of(failedLink, successLink));
+        UpdateResult result = mock(UpdateResult.class);
 
-        // Первая ссылка вызывает исключение
-        when(linksService.processLink(failedLink)).thenThrow(new RuntimeException("API Error"));
+        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1, link2));
+        // link1 вернет обновление, link2 - нет
+        when(processorService.processLink(link1)).thenReturn(Optional.of(result));
+        when(processorService.processLink(link2)).thenReturn(Optional.empty());
 
-        // Вторая ссылка обрабатывается успешно
-        LinkUpdate update = new LinkUpdate(2L, "https://github.com/success", "Update", List.of(1L));
-        when(linksService.processLink(successLink)).thenReturn(Optional.of(update));
+        // Act
+        linkUpdaterScheduler.update();
+
+        // Assert
+        verify(processorService).processLink(link1);
+        verify(processorService).processLink(link2);
+
+        // handleUpdateResult должен быть вызван только для того, кто вернул Optional.of
+        verify(processorService, times(1)).handleUpdateResult(eq(result), eq(link1));
+
+        // Проверяем, что в конце обновилось время проверки для всего батча
+        verify(linksRepository).updateLastCheckedAt(anyList(), any(OffsetDateTime.class));
+    }
+
+    @Test
+    public void update_whenBatchIsEmpty_shouldDoNothing() {
+        // Arrange
+        when(linksRepository.findLinksToCheck(anyInt())).thenReturn(List.of());
+
+        // Act
+        linkUpdaterScheduler.update();
+
+        // Assert
+        verifyNoInteractions(processorService);
+        verify(linksRepository, never()).updateLastCheckedAt(anyList(), any());
+    }
+
+    @Test
+    public void update_shouldPartitionAndProcessAllLinksInThreads() {
+        // Проверка корректности разбиения на чанки
+        Link link1 = new Link("url1", OffsetDateTime.now());
+        link1.setId(1L);
+        Link link2 = new Link("url2", OffsetDateTime.now());
+        link2.setId(2L);
+        Link link3 = new Link("url3", OffsetDateTime.now());
+        link3.setId(3L);
+
+        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1, link2, link3));
+
+        linkUpdaterScheduler.update();
+
+        verify(processorService, times(3)).processLink(any(Link.class));
+        verify(linksRepository).updateLastCheckedAt(anyList(), any());
+    }
+
+    @Test
+    public void update_whenInServiceThrowsException_shouldNotBreakExecution() {
+
+        Link link1 = new Link("url1", OffsetDateTime.now());
+        link1.setId(1L);
+        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1));
+
+        when(processorService.processLink(link1)).thenThrow(new IllegalArgumentException("Unexpected error"));
 
         assertDoesNotThrow(() -> linkUpdaterScheduler.update());
-
-        // Проверяем, что боту ушло обновление по второй ссылке
-        verify(botClient).sendUpdate(update);
     }
 }

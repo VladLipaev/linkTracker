@@ -2,6 +2,8 @@ name: link-tracker
 services:
   postgresql:
     container_name: link-tracker-db
+    volumes:
+      - ./my_db_files:/var/lib/postgresql/data
     image: postgres:17
     ports:
       - '5433:5432'

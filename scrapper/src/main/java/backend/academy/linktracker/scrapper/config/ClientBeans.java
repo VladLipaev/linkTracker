@@ -23,20 +23,18 @@ public class ClientBeans {
     }
 
     @Bean
-    public GitHubClient gitHubClient(GithubProperties githubProperties) {
+    public GitHubClient gitHubClient(
+            GithubProperties githubProperties, @Value("${app.github.base-url}") String baseUrl) {
         return new GitHubClient(RestClient.builder()
-                .baseUrl("https://api.github.com")
+                .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + githubProperties.getToken())
                 .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
                 .build());
     }
 
     @Bean
-    public StackOverflowClient stackOverflowClient(StackoverflowProperties stackoverflowProperties) {
-        return new StackOverflowClient(
-                RestClient.builder()
-                        .baseUrl("https://api.stackexchange.com/2.3")
-                        .build(),
-                stackoverflowProperties);
+    public StackOverflowClient stackOverflowClient(
+            StackoverflowProperties stackoverflowProperties, @Value("${app.stackoverflow.base-url}") String baseUrl) {
+        return new StackOverflowClient(RestClient.builder().baseUrl(baseUrl).build(), stackoverflowProperties);
     }
 }

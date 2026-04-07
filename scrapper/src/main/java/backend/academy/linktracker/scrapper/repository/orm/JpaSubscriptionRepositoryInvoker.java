@@ -49,6 +49,11 @@ public class JpaSubscriptionRepositoryInvoker
     }
 
     @Override
+    public Slice<Subscription> findAll(Pageable pageable) {
+        return jpaRepository.findAll(pageable);
+    }
+
+    @Override
     public Subscription save(Subscription entity) {
         return jpaRepository.save(entity);
     }

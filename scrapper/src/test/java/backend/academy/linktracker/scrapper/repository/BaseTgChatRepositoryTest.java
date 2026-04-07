@@ -3,10 +3,11 @@ package backend.academy.linktracker.scrapper.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import backend.academy.linktracker.scrapper.TestBeans;
+import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Chat;
 // Предполагаемое имя ORM обертки
 import backend.academy.linktracker.scrapper.repository.raw.SqlTgChatRepository;
+import backend.academy.linktracker.scrapper.service.ChatAlreadyExistsException;
 import backend.academy.linktracker.scrapper.service.TgChatService;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -16,14 +17,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Import(TestBeans.class)
-@ActiveProfiles("test")
 @Transactional
-public class TgChatRepositoryTest {
+public abstract class BaseTgChatRepositoryTest {
 
     @Autowired
     private TgChatRepository tgChatRepository;
@@ -44,7 +43,6 @@ public class TgChatRepositoryTest {
         if ("SQL".equalsIgnoreCase(accessType)) {
             assertThat(bean).isInstanceOf(SqlTgChatRepository.class);
         } else {
-            // Если у вас ORM реализация называется иначе, поправьте имя класса
             assertThat(bean.getClass().getSimpleName()).contains("Jpa");
         }
     }
@@ -79,7 +77,7 @@ public class TgChatRepositoryTest {
         Long chatId = 555L;
         tgChatRepository.save(new Chat(chatId));
 
-        assertThrows(RuntimeException.class, () -> {
+        assertThrows(ChatAlreadyExistsException.class, () -> {
             tgChatService.addTgChat(chatId);
         });
     }

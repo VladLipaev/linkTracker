@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import backend.academy.linktracker.scrapper.TestBeans;
+import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.repository.orm.JpaLinksRepositoryInvoker;
 import backend.academy.linktracker.scrapper.repository.raw.SqlLinksRepository;
@@ -18,14 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Import(TestBeans.class)
-@ActiveProfiles("test")
 @Transactional
-public class LinksRepositoryTest {
+public abstract class BaseLinksRepositoryTest {
 
     @Autowired
     private LinksRepository linksRepository;

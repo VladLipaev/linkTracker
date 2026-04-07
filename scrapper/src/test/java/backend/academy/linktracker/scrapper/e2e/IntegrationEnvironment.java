@@ -1,28 +1,32 @@
 package backend.academy.linktracker.scrapper.e2e;
 
+import backend.academy.linktracker.scrapper.config.TestBeans;
 import java.nio.file.Paths;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Import(TestBeans.class)
 @Testcontainers
 public abstract class IntegrationEnvironment {
 
-    protected static final Network network = Network.newNetwork();
-
     protected static final GenericContainer<?> scrapper = new GenericContainer<>(
                     new ImageFromDockerfile().withFileFromPath(".", Paths.get(".")))
-            .withNetwork(network)
+            .withNetwork(TestBeans.SHARED_NETWORK)
             .withNetworkAliases("scrapper")
             .withExposedPorts(8081)
+            .withEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://postgres:5432/scrapper")
+            .withEnv("SPRING_DATASOURCE_USERNAME", "user")
+            .withEnv("SPRING_DATASOURCE_PASSWORD", "pass")
             .withEnv("BOT_BASE_URL", "http://bot:8080")
+            .dependsOn(TestBeans.POSTGRES)
             .waitingFor(Wait.forHttp("/actuator/health").forStatusCode(200));
 
     protected static final GenericContainer<?> bot = new GenericContainer<>(
                     new ImageFromDockerfile().withFileFromPath(".", Paths.get("../bot")))
-            .withNetwork(network)
+            .withNetwork(TestBeans.SHARED_NETWORK)
             .withNetworkAliases("bot")
             .withExposedPorts(8080)
             .withEnv("SCRAPPER_BASE_URL", "http://scrapper:8081")

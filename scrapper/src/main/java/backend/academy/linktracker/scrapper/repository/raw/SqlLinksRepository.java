@@ -1,30 +1,36 @@
 package backend.academy.linktracker.scrapper.repository.raw;
 
+import static backend.academy.linktracker.scrapper.repository.raw.DataAccessExceptionHandler.handleDataAccessException;
+
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.repository.RawSqlException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -33,7 +39,7 @@ import org.springframework.stereotype.Repository;
 @Slf4j
 public class SqlLinksRepository implements LinksRepository {
 
-    private final DataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
     private static final String SQL_FIND_ALL_CHAT_IDS_BY_URL = "SELECT c.id from chats c "
             + "join subscriptions s on c.id = s.chat_id " + "join links l on s.link_id = l.id where l.url = ?";
@@ -43,13 +49,16 @@ public class SqlLinksRepository implements LinksRepository {
 
     private static final String SQL_UPDATE_LAST_UPDATED = "UPDATE links SET updated_at = ? WHERE url = ?";
 
+    private static final String SQL_FIND_LINKS_TO_CHECK = "SELECT id as link_id, url, updated_at, checked_at "
+            + "FROM links ORDER BY checked_at  NULLS FIRST LIMIT ?";
+
     private static final String SQL_FIND_BY_CHAT_ID_AND_URL =
-            "SELECT l.id AS link_id, l.url, l.updated_at " + "FROM links l "
+            "SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, s.chat_id as chat_id " + "FROM links l "
                     + "JOIN subscriptions s ON l.id = s.link_id "
                     + "WHERE s.chat_id = ? AND l.url = ?";
 
     private static final String SQL_FIND_BY_URL =
-            "SELECT l.id AS link_id, l.url, l.updated_at, c.id AS chat_id " + "FROM links l "
+            "SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, c.id AS chat_id " + "FROM links l "
                     + "LEFT JOIN subscriptions s ON l.id = s.link_id "
                     + "LEFT JOIN chats c ON s.chat_id = c.id "
                     + "WHERE l.url = ?";
@@ -57,264 +66,297 @@ public class SqlLinksRepository implements LinksRepository {
     private static final String SQL_INSERT_LINK = "INSERT INTO links (url, updated_at) VALUES (?, ?)";
 
     private static final String SQL_FIND_BY_ID =
-            "SELECT l.id AS link_id, l.url, l.updated_at, c.id AS chat_id " + "FROM links l "
+            "SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, c.id AS chat_id " + "FROM links l "
                     + "LEFT JOIN subscriptions s ON l.id = s.link_id "
                     + "LEFT JOIN chats c ON s.chat_id = c.id "
                     + "WHERE l.id = ?";
 
     private static final String SQL_FIND_ALL =
-            "SELECT l.id AS link_id, l.url, l.updated_at, c.id AS chat_id " + "FROM links l "
+            "SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, c.id AS chat_id " + "FROM links l "
                     + "LEFT JOIN subscriptions s ON l.id = s.link_id "
                     + "LEFT JOIN chats c ON s.chat_id = c.id "
                     + "ORDER BY l.id";
 
+    private static final String SQL_FIND_ALL_PAGING = """
+        WITH paginated_links AS (
+            SELECT id, url, updated_at, checked_at
+            FROM links
+            ORDER BY id
+            LIMIT ? OFFSET ?
+        )
+        SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, c.id AS chat_id
+        FROM paginated_links l
+        LEFT JOIN subscriptions s ON l.id = s.link_id
+        LEFT JOIN chats c ON s.chat_id = c.id
+        ORDER BY l.id
+        """;
+
     private static final String SQL_DELETE_BY_ID = "DELETE FROM links WHERE id = ?";
 
-    private static final String SQL_EXISTS_BY_ID = "SELECT COUNT(*) FROM links WHERE id = ?";
+    private static final String SQL_EXISTS_BY_ID = "SELECT EXISTS(SELECT 1 FROM links WHERE id = ?)";
 
-    private Link extractBasicLinkData(ResultSet rs) throws SQLException {
+    private final RowMapper<Link> linkRowMapper = (rs, rowNum) -> {
         Link link = new Link();
         link.setId(rs.getLong("link_id"));
         link.setUrl(rs.getString("url"));
-
         Timestamp updatedAt = rs.getTimestamp("updated_at");
         if (updatedAt != null) {
-            // Правильное чтение Timestamp в OffsetDateTime без сдвига времени
-            link.setLastUpdated(
-                    updatedAt.toInstant().atOffset(OffsetDateTime.now().getOffset()));
+            link.setLastUpdated(updatedAt.toInstant().atOffset(ZoneOffset.UTC));
+        }
+        Timestamp checkedAt = rs.getTimestamp("checked_at");
+        if (checkedAt != null) {
+            link.setLastCheckedAt(checkedAt.toInstant().atOffset(ZoneOffset.UTC));
+        }
+        return link;
+    };
+
+    private static Link extractData(ResultSet rs) throws SQLException {
+        Link link = null;
+        while (rs.next()) {
+            if (link == null) {
+                link = new Link();
+                link.setId(rs.getLong("link_id"));
+                link.setUrl(rs.getString("url"));
+                Timestamp updatedAt = rs.getTimestamp("updated_at");
+                if (updatedAt != null) {
+                    link.setLastUpdated(updatedAt.toInstant().atOffset(ZoneOffset.UTC));
+                }
+                Timestamp checkedAt = rs.getTimestamp("checked_at");
+                if (checkedAt != null) {
+                    link.setLastUpdated(checkedAt.toInstant().atOffset(ZoneOffset.UTC));
+                }
+            }
+            long chatId = rs.getLong("chat_id");
+            if (!rs.wasNull()) {
+                link.addChat(new Chat(chatId));
+            }
         }
         return link;
     }
 
-    private Chat extractChatFromResultSet(ResultSet rs) throws SQLException {
-        long chatId = rs.getLong("chat_id");
-        if (rs.wasNull()) {
-            return null;
-        }
-        return new Chat(chatId);
-    }
-
     @Override
     public List<Long> findAllChatIdsByUrl(String url) {
-        List<Long> ids = new ArrayList<>();
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_ALL_CHAT_IDS_BY_URL)) {
-
-            stmt.setString(1, url);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    ids.add(rs.getLong("id"));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось найти все айди чатов", e);
+        try {
+            return jdbcTemplate.queryForList(SQL_FIND_ALL_CHAT_IDS_BY_URL, Long.class, url);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
-        return ids;
     }
 
     @Override
     public Slice<Long> findAllChatIdsByUrl(String url, Pageable pageable) {
-        List<Long> ids = new ArrayList<>();
         int limit = pageable.getPageSize() + 1;
         long offset = pageable.getOffset();
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_ALL_CHAT_IDS_BY_URL_PAGING)) {
-
-            stmt.setString(1, url);
-            stmt.setInt(2, limit);
-            stmt.setLong(3, offset);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    ids.add(rs.getLong("id"));
-                }
+        try {
+            List<Long> ids = new ArrayList<>(
+                    jdbcTemplate.queryForList(SQL_FIND_ALL_CHAT_IDS_BY_URL_PAGING, Long.class, url, limit, offset));
+            boolean hasNext = ids.size() > pageable.getPageSize();
+            if (hasNext) {
+                ids.removeLast();
             }
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось найти айди чатов", e);
+            return new SliceImpl<>(ids, pageable, hasNext);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
-
-        boolean hasNext = ids.size() > pageable.getPageSize();
-        if (hasNext) {
-            ids.removeLast();
-        }
-        return new SliceImpl<>(ids, pageable, hasNext);
     }
 
     @Override
     public void updateLastUpdatedByUrl(String url, OffsetDateTime lastUpdateFromApi) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_UPDATE_LAST_UPDATED)) {
-
-            // Используем .toInstant(), чтобы сохранить абсолютное время (UTC), а не локальное
-            stmt.setTimestamp(1, Timestamp.from(lastUpdateFromApi.toInstant()));
-            stmt.setString(2, url);
-
-            int rowsUpdated = stmt.executeUpdate();
+        Timestamp ts = Timestamp.from(lastUpdateFromApi.toInstant());
+        try {
+            int rowsUpdated = jdbcTemplate.update(SQL_UPDATE_LAST_UPDATED, ts, url);
             if (rowsUpdated == 0) {
                 log.atWarn()
                         .setMessage("Строка не была обновлена. Ссылка не найдена в БД")
                         .addKeyValue("url", url)
                         .log();
             }
-
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось обновить время изменения ссылки", e);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
     }
 
     @Override
     public Optional<Link> findByChatIdAndUrl(Long chatId, String url) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_BY_CHAT_ID_AND_URL)) {
-
-            stmt.setLong(1, chatId);
-            stmt.setString(2, url);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Link link = extractBasicLinkData(rs);
-                    // Добавляем чат вручную, так как мы точно знаем, что он привязан
-                    link.getChats().add(new Chat(chatId));
-                    return Optional.of(link);
-                }
+        try {
+            Link link = jdbcTemplate.query(SQL_FIND_BY_CHAT_ID_AND_URL, SqlLinksRepository::extractData, chatId, url);
+            if (link != null) {
+                link.addChat(new Chat(chatId));
             }
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось найти ссылку по чату и url", e);
+            return Optional.ofNullable(link);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
-        return Optional.empty();
     }
 
     @Override
     public Optional<Link> findByUrl(String url) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_BY_URL)) {
-
-            stmt.setString(1, url);
-
-            return getLink(stmt);
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось найти ссылку по url", e);
+        try {
+            Link result = jdbcTemplate.query(SQL_FIND_BY_URL, SqlLinksRepository::extractData, url);
+            return Optional.ofNullable(result);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
     }
 
-    @NotNull
-    private Optional<Link> getLink(PreparedStatement stmt) throws SQLException {
-        try (ResultSet rs = stmt.executeQuery()) {
-            Link link = null;
+    @Override
+    public List<Link> findLinksToCheck(int batchSize) {
+        try {
+            return jdbcTemplate.query(SQL_FIND_LINKS_TO_CHECK, linkRowMapper, batchSize);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
+        }
+    }
 
-            while (rs.next()) {
-                if (link == null) {
-                    link = extractBasicLinkData(rs);
-                }
-                Chat chat = extractChatFromResultSet(rs);
-                if (chat != null) {
-                    link.getChats().add(chat);
-                }
+    @Override
+    public void updateLastCheckedAt(List<Long> linkIds, OffsetDateTime checkedAt) {
+        if (linkIds == null || linkIds.isEmpty()) return;
+
+        String sql = "UPDATE links SET checked_at = ? WHERE id = ?";
+        Timestamp ts = Timestamp.from(checkedAt.toInstant());
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
+                ps.setTimestamp(1, ts);
+                ps.setLong(2, linkIds.get(i));
             }
-            return Optional.ofNullable(link);
+
+            @Override
+            public int getBatchSize() {
+                return linkIds.size();
+            }
+        });
+    }
+
+    @Override
+    public Slice<Link> findAll(Pageable pageable) {
+        int limit = pageable.getPageSize() + 1;
+        long offset = pageable.getOffset();
+        try {
+            List<Link> links = jdbcTemplate.query(SQL_FIND_ALL_PAGING, SqlLinksRepository::getLinks, limit, offset);
+            boolean hasNext;
+            hasNext = links.size() > pageable.getPageSize();
+            if (hasNext) {
+                links.removeLast();
+            }
+            return new SliceImpl<>(links, pageable, hasNext);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
     }
 
     @Override
     public Link save(Link entity) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_INSERT_LINK, Statement.RETURN_GENERATED_KEYS)) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        try {
+            jdbcTemplate.update(
+                    connection -> {
+                        PreparedStatement ps =
+                                connection.prepareStatement(SQL_INSERT_LINK, Statement.RETURN_GENERATED_KEYS);
+                        try {
+                            ps.setString(1, entity.getUrl());
+                            ps.setTimestamp(
+                                    2, Timestamp.from(entity.getLastUpdated().toInstant()));
+                            return ps;
+                        } catch (SQLException | RuntimeException e) {
+                            try {
+                                ps.close();
+                            } catch (SQLException ex) {
+                                e.addSuppressed(ex);
+                            }
+                            throw e;
+                        }
+                    },
+                    keyHolder);
 
-            stmt.setString(1, entity.getUrl());
-            stmt.setTimestamp(
-                    2,
-                    entity.getLastUpdated() != null
-                            ? Timestamp.from(entity.getLastUpdated().toInstant())
-                            : Timestamp.from(java.time.Instant.now()));
-            stmt.executeUpdate();
-
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    entity.setId(generatedKeys.getLong(1));
-                } else {
-                    throw new SQLException("Создание ссылки неудачно, ID не был получен.");
+            if (keyHolder.getKeys() != null) {
+                Number key = (Number) keyHolder.getKeys().get("id");
+                if (key != null) {
+                    entity.setId(key.longValue());
                 }
             }
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось сохранить ссылку", e);
+            return entity;
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
-        return entity;
     }
 
     @Override
     public Optional<Link> findById(Long id) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_BY_ID)) {
+        try {
+            Link result = jdbcTemplate.query(SQL_FIND_BY_ID, SqlLinksRepository::extractData, id);
 
-            stmt.setLong(1, id);
-
-            return getLink(stmt);
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось найти ссылку по id", e);
+            return Optional.ofNullable(result);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
     }
 
     @Override
     public List<Link> findAll() {
-        // LinkedHashMap склеивает дубликаты (одна ссылка -> несколько чатов) и сохраняет порядок ORDER BY
+        try {
+            return jdbcTemplate.query(SQL_FIND_ALL, SqlLinksRepository::getLinks);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
+        }
+    }
+
+    private static List<Link> getLinks(ResultSet rs) throws SQLException {
         Map<Long, Link> linkMap = new LinkedHashMap<>();
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_FIND_ALL);
-                ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                long linkId = rs.getLong("link_id");
-
-                // Достаем ссылку из мапы. Если её еще нет - создаем из ResultSet и кладем в мапу
-                Link link = linkMap.computeIfAbsent(linkId, k -> {
-                    try {
-                        return extractBasicLinkData(rs);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                // Достаем привязанный чат и добавляем в список чатов этой ссылки
-                Chat chat = extractChatFromResultSet(rs);
-                if (chat != null) {
-                    link.getChats().add(chat);
+        while (rs.next()) {
+            Long linkId = rs.getLong("link_id");
+            Link link;
+            if (linkMap.containsKey(linkId)) {
+                link = linkMap.get(linkId);
+            } else {
+                link = new Link();
+                link.setId(linkId);
+                link.setUrl(rs.getString("url"));
+                Timestamp updatedAt = rs.getTimestamp("updated_at");
+                if (updatedAt != null) {
+                    link.setLastUpdated(updatedAt.toInstant().atOffset(ZoneOffset.UTC));
                 }
+                Timestamp checkedAt = rs.getTimestamp("checked_at");
+                if (checkedAt != null) {
+                    link.setLastCheckedAt(checkedAt.toInstant().atOffset(ZoneOffset.UTC));
+                }
+                linkMap.put(linkId, link);
             }
-        } catch (SQLException | RuntimeException e) {
-            throw new RawSqlException("не удалось найти ссылки", e);
+            long chatId = rs.getLong("chat_id");
+            if (!rs.wasNull()) {
+                link.addChat(new Chat(chatId));
+            }
         }
         return new ArrayList<>(linkMap.values());
     }
 
     @Override
     public void deleteById(Long id) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_DELETE_BY_ID)) {
-
-            stmt.setLong(1, id);
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new RawSqlException("неудачно удалить ссылку по айди", e);
+        try {
+            jdbcTemplate.update(SQL_DELETE_BY_ID, id);
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
     }
 
     @Override
     public boolean existsById(Long id) {
-        Connection conn = DataSourceUtils.getConnection(dataSource);
-        try (PreparedStatement stmt = conn.prepareStatement(SQL_EXISTS_BY_ID)) {
-
-            stmt.setLong(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            throw new RawSqlException("не удалось чекнуть есть ли ссылка по айди", e);
+        try {
+            return Boolean.TRUE.equals(jdbcTemplate.queryForObject(SQL_EXISTS_BY_ID, Boolean.class, id));
+        } catch (DataAccessException e) {
+            handleDataAccessException(e);
+            throw new RawSqlException(e);
         }
-        return false;
     }
 }

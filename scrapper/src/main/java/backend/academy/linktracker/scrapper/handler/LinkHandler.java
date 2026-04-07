@@ -6,5 +6,5 @@ public interface LinkHandler {
 
     boolean supports(String url);
 
-    OffsetDateTime fetchUpdate(String url);
+    UpdateResult fetchUpdate(String url, OffsetDateTime lastUpdated);
 }

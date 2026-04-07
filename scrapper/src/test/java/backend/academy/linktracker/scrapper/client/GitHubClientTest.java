@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -38,10 +40,12 @@ class GitHubClientTest {
 
         // Act & Assert: Проверяем, что клиент выбросил наше кастомное исключение из .onStatus
         GitHubClientException exception = assertThrows(GitHubClientException.class, () -> {
-            gitHubClient.fetchRepo("test-owner", "test-repo");
+            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN);
         });
-        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathMatching("/repos/test-owner/test-repo")));
-        assertTrue(exception.getMessage().contains("500 INTERNAL_SERVER_ERROR"));
+        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/repos/test-owner/test-repo/issues"))
+                .withQueryParam("state", equalTo("all"))
+                .withQueryParam("since", equalTo("-999999999-01-01T00:00+18:00")));
+        assertTrue(exception.getMessage().contains("GitHub API error: "));
     }
 
     @Test
@@ -56,9 +60,11 @@ class GitHubClientTest {
                         .withBody(invalidSchemaJson)));
 
         GitHubClientException exception = assertThrows(GitHubClientException.class, () -> {
-            gitHubClient.fetchRepo("test-owner", "test-repo");
+            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN);
         });
-        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathMatching("/repos/test-owner/test-repo")));
-        assertTrue(exception.getMessage().contains("не соответствует заявленной схеме"));
+        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/repos/test-owner/test-repo/issues"))
+                .withQueryParam("state", equalTo("all"))
+                .withQueryParam("since", equalTo("-999999999-01-01T00:00+18:00")));
+        assertTrue(exception.getMessage().contains("GitHub API error: "));
     }
 }

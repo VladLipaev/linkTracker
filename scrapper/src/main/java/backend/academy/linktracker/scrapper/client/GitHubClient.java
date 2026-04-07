@@ -1,8 +1,11 @@
 package backend.academy.linktracker.scrapper.client;
 
-import backend.academy.linktracker.scrapper.dto.GitHubRepoResponse;
+import backend.academy.linktracker.scrapper.handler.dto.GitHubIssueResponse;
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -13,17 +16,22 @@ public class GitHubClient {
 
     private final RestClient restClient;
 
-    public GitHubRepoResponse fetchRepo(String owner, String repo) {
+    public List<GitHubIssueResponse> fetchRepo(String owner, String repo, OffsetDateTime since)
+            throws GitHubClientException {
         try {
-            GitHubRepoResponse response = restClient
+            List<GitHubIssueResponse> response = restClient
                     .get()
-                    .uri("/repos/{owner}/{repo}", owner, repo)
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/repos/{owner}/{repo}/issues")
+                            .queryParam("state", "all")
+                            .queryParam("since", since.toString())
+                            .build(owner, repo))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, res) -> {
                         throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
                     })
-                    .body(GitHubRepoResponse.class);
-            if (response == null || response.updatedAt() == null) {
+                    .body(new ParameterizedTypeReference<>() {});
+            if (response == null) {
                 throw new GitHubClientException(
                         "GitHub API error: Тело ответа не соответствует заявленной схеме (отсутствует updatedAt)");
             }

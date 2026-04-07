@@ -43,6 +43,21 @@ public class JpaLinksRepositoryInvoker implements backend.academy.linktracker.sc
     }
 
     @Override
+    public List<Link> findLinksToCheck(int batchSize) {
+        return jpaLinksRepository.findLinksToCheck(batchSize);
+    }
+
+    @Override
+    public void updateLastCheckedAt(List<Long> linkIds, OffsetDateTime checkedAt) {
+        jpaLinksRepository.updateLastCheckedAt(linkIds, checkedAt);
+    }
+
+    @Override
+    public Slice<Link> findAll(Pageable pageable) {
+        return jpaLinksRepository.findAll(pageable);
+    }
+
+    @Override
     public Link save(Link entity) {
         return jpaLinksRepository.save(entity);
     }

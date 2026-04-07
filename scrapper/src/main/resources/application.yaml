@@ -12,7 +12,7 @@ spring:
         address: 'static://localhost:9080'
         negotiation-type: plaintext
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB}
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
@@ -21,16 +21,21 @@ app:
   stackoverflow:
     key: ${STACKOVERFLOW_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
     access-token: ${STACKOVERFLOW_ACCESS_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
+    base-url: https://api.stackexchange.com/2.3
   github:
     token: ${GITHUB_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
+    base-url: https://api.github.com
   bot:
     uri: http://localhost:8080
   scheduler:
+    enable: true
     interval: 30s
+    batch-size: 100
+    thread-count: 4
   communication:
     mode: grpc # rest
   db:
-    access-type: ORM
+    access-type: SQL
 
 
 logging:

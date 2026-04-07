@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper;
 
+import backend.academy.linktracker.scrapper.config.TestBeans;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.boot.SpringApplication;
 

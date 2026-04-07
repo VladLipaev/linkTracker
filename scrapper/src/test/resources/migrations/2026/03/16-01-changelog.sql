@@ -13,8 +13,8 @@ create table links(
 );
 
 create table subscriptions(
-                              chat_id bigint not null references chats(id) on delete cascade,
-                              link_id bigint not null references links(id) on delete cascade,
+                              chat_id bigint not null references links(id) on delete cascade,
+                              link_id bigint not null references chats(id) on delete cascade,
                               primary key (chat_id, link_id)
 );
 
@@ -26,5 +26,3 @@ create table subscriptions_tags(
                                    constraint fk_subscription foreign key
                                        (chat_id, link_id) references subscriptions(chat_id, link_id) on delete cascade
 );
-
-create index idx_links_updated_at on links(updated_at);
