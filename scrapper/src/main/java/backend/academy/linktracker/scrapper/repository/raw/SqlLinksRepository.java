@@ -28,6 +28,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -50,7 +51,7 @@ public class SqlLinksRepository implements LinksRepository {
     private static final String SQL_UPDATE_LAST_UPDATED = "UPDATE links SET updated_at = ? WHERE url = ?";
 
     private static final String SQL_FIND_LINKS_TO_CHECK = "SELECT id as link_id, url, updated_at, checked_at "
-            + "FROM links ORDER BY checked_at  NULLS FIRST LIMIT ?";
+            + "FROM links ORDER BY checked_at  NULLS FIRST LIMIT ? OFFSET ?";
 
     private static final String SQL_FIND_BY_CHAT_ID_AND_URL =
             "SELECT l.id AS link_id, l.url, l.updated_at, l.checked_at, s.chat_id as chat_id " + "FROM links l "
@@ -205,16 +206,6 @@ public class SqlLinksRepository implements LinksRepository {
     }
 
     @Override
-    public List<Link> findLinksToCheck(int batchSize) {
-        try {
-            return jdbcTemplate.query(SQL_FIND_LINKS_TO_CHECK, linkRowMapper, batchSize);
-        } catch (DataAccessException e) {
-            handleDataAccessException(e);
-            throw new RawSqlException(e);
-        }
-    }
-
-    @Override
     public void updateLastCheckedAt(List<Long> linkIds, OffsetDateTime checkedAt) {
         if (linkIds == null || linkIds.isEmpty()) return;
 
@@ -235,13 +226,18 @@ public class SqlLinksRepository implements LinksRepository {
     }
 
     @Override
-    public Slice<Link> findAll(Pageable pageable) {
+    public Slice<Link> findLinksToCheck(Pageable pageable) {
+        return findAllPaging(pageable, SqlLinksRepository::getLinks);
+    }
+
+    private @NotNull SliceImpl<Link> findAllPaging(
+            Pageable pageable, ResultSetExtractor<List<Link>> resultSetExtractor) {
         int limit = pageable.getPageSize() + 1;
         long offset = pageable.getOffset();
+
         try {
-            List<Link> links = jdbcTemplate.query(SQL_FIND_ALL_PAGING, SqlLinksRepository::getLinks, limit, offset);
-            boolean hasNext;
-            hasNext = links.size() > pageable.getPageSize();
+            List<Link> links = jdbcTemplate.query(SQL_FIND_ALL_PAGING, resultSetExtractor, limit, offset);
+            boolean hasNext = links.size() > pageable.getPageSize();
             if (hasNext) {
                 links.removeLast();
             }
@@ -250,6 +246,11 @@ public class SqlLinksRepository implements LinksRepository {
             handleDataAccessException(e);
             throw new RawSqlException(e);
         }
+    }
+
+    @Override
+    public Slice<Link> findAll(Pageable pageable) {
+        return findAllPaging(pageable, SqlLinksRepository::getLinksWithChats);
     }
 
     @Override
@@ -304,40 +305,53 @@ public class SqlLinksRepository implements LinksRepository {
     @Override
     public List<Link> findAll() {
         try {
-            return jdbcTemplate.query(SQL_FIND_ALL, SqlLinksRepository::getLinks);
+            return jdbcTemplate.query(SQL_FIND_ALL, SqlLinksRepository::getLinksWithChats);
         } catch (DataAccessException e) {
             handleDataAccessException(e);
             throw new RawSqlException(e);
         }
     }
 
-    private static List<Link> getLinks(ResultSet rs) throws SQLException {
+    private static List<Link> getLinksWithChats(ResultSet rs) throws SQLException {
         Map<Long, Link> linkMap = new LinkedHashMap<>();
         while (rs.next()) {
-            Long linkId = rs.getLong("link_id");
-            Link link;
-            if (linkMap.containsKey(linkId)) {
-                link = linkMap.get(linkId);
-            } else {
-                link = new Link();
-                link.setId(linkId);
-                link.setUrl(rs.getString("url"));
-                Timestamp updatedAt = rs.getTimestamp("updated_at");
-                if (updatedAt != null) {
-                    link.setLastUpdated(updatedAt.toInstant().atOffset(ZoneOffset.UTC));
-                }
-                Timestamp checkedAt = rs.getTimestamp("checked_at");
-                if (checkedAt != null) {
-                    link.setLastCheckedAt(checkedAt.toInstant().atOffset(ZoneOffset.UTC));
-                }
-                linkMap.put(linkId, link);
-            }
+            Link link = getLink(rs, linkMap);
             long chatId = rs.getLong("chat_id");
             if (!rs.wasNull()) {
                 link.addChat(new Chat(chatId));
             }
         }
         return new ArrayList<>(linkMap.values());
+    }
+
+    private static List<Link> getLinks(ResultSet rs) throws SQLException {
+        Map<Long, Link> linkMap = new LinkedHashMap<>();
+        while (rs.next()) {
+            getLink(rs, linkMap);
+        }
+        return new ArrayList<>(linkMap.values());
+    }
+
+    private static Link getLink(ResultSet rs, Map<Long, Link> linkMap) throws SQLException {
+        Long linkId = rs.getLong("link_id");
+        Link link;
+        if (linkMap.containsKey(linkId)) {
+            link = linkMap.get(linkId);
+        } else {
+            link = new Link();
+            link.setId(linkId);
+            link.setUrl(rs.getString("url"));
+            Timestamp updatedAt = rs.getTimestamp("updated_at");
+            if (updatedAt != null) {
+                link.setLastUpdated(updatedAt.toInstant().atOffset(ZoneOffset.UTC));
+            }
+            Timestamp checkedAt = rs.getTimestamp("checked_at");
+            if (checkedAt != null) {
+                link.setLastCheckedAt(checkedAt.toInstant().atOffset(ZoneOffset.UTC));
+            }
+            linkMap.put(linkId, link);
+        }
+        return link;
     }
 
     @Override

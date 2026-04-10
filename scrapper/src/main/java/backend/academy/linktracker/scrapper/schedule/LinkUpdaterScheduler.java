@@ -14,6 +14,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -46,13 +49,29 @@ public class LinkUpdaterScheduler {
     public void update() {
         log.info("Начинаем батч-проверку ссылок...");
 
-        List<Link> batch = linksRepository.findLinksToCheck(properties.batchSize());
+        Pageable pageable = PageRequest.of(0, properties.batchSize());
+        boolean hasMorePages = true;
+        while (hasMorePages) {
+            Slice<Link> sliceBatch = linksRepository.findLinksToCheck(pageable);
+            List<Link> batch = sliceBatch.getContent();
 
-        if (batch.isEmpty()) {
-            log.debug("Нет ссылок для проверки.");
-            return;
+            if (batch.isEmpty()) {
+                log.debug("Нет ссылок для проверки.");
+                break;
+            }
+
+            processBatch(batch);
+
+            hasMorePages = sliceBatch.hasNext();
+            if (hasMorePages) {
+                pageable = sliceBatch.nextPageable();
+            }
         }
+        log.info("Батч-проверка ссылок завершена.");
+    }
 
+    private void processBatch(List<Link> batch) {
+        OffsetDateTime batchStartTime = OffsetDateTime.now();
         int chunkSize = (int) Math.ceil((double) batch.size() / properties.threadCount());
         List<List<Link>> chunks = partitionList(batch, chunkSize);
 
@@ -63,7 +82,9 @@ public class LinkUpdaterScheduler {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         List<Long> processedIds = batch.stream().map(Link::getId).toList();
-        linksRepository.updateLastCheckedAt(processedIds, OffsetDateTime.now());
+        // checked_at параметр у ссылки используется только для установления порядка очереди на обработку скедулером
+        // целостность же данных гарантируется параметром updated_at
+        processorService.markBatchAsChecked(processedIds, batchStartTime);
 
         log.atInfo()
                 .setMessage("Батч ссылок успешно обработан.")

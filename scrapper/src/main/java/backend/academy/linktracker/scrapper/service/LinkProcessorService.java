@@ -7,10 +7,14 @@ import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.handler.LinkHandler;
 import backend.academy.linktracker.scrapper.handler.UpdateResult;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +26,7 @@ public class LinkProcessorService {
     private final List<LinkHandler> linkHandlers;
     private final LinksRepository linksRepository;
     private final NotificationUpdateSender updateSender;
+    private static final Integer BATCH_SIZE = 100;
 
     public Optional<UpdateResult> processLink(Link link) {
         String url = link.getUrl();
@@ -33,7 +38,8 @@ public class LinkProcessorService {
                     .addKeyValue("url", url)
                     .log();
 
-            throw new IllegalArgumentException("Невалидная ссылка %s".formatted(url));
+            sendErrorNotification(link, "Невалидная ссылка %s".formatted(url));
+            return Optional.empty();
         }
 
         try {
@@ -67,9 +73,16 @@ public class LinkProcessorService {
 
     private void sendErrorNotification(Link link, String errorMessage) {
         try {
-            List<Long> chatIds = linksRepository.findAllChatIdsByUrl(link.getUrl());
-            if (!chatIds.isEmpty()) {
-                updateSender.sendUpdate(new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatIds));
+            Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+            Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), pageable);
+            if (chatSlice.hasContent()) {
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
+            }
+            while (chatSlice.hasNext()) {
+                chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), chatSlice.nextPageable());
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
             }
         } catch (Exception ex) {
             log.atError()
@@ -89,12 +102,31 @@ public class LinkProcessorService {
         }
 
         if (result.hasUpdate()) {
-            List<Long> chatIds = linksRepository.findAllChatIdsByUrl(url);
-            updateSender.sendUpdate(new LinkUpdate(link.getId(), url, result.description(), chatIds));
-
+            Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+            Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(url, pageable);
+            if (chatSlice.hasContent()) {
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+            }
+            while (chatSlice.hasNext()) {
+                chatSlice = linksRepository.findAllChatIdsByUrl(url, chatSlice.nextPageable());
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+            }
             log.atInfo()
                     .setMessage("Уведомление отправлено")
                     .addKeyValue("url", url)
+                    .log();
+        }
+    }
+
+    @Transactional
+    public void markBatchAsChecked(List<Long> linkIds, OffsetDateTime checkedAt) {
+        if (!linkIds.isEmpty()) {
+            linksRepository.updateLastCheckedAt(linkIds, checkedAt);
+            log.atDebug()
+                    .setMessage("Время проверки обновлено для ссылок")
+                    .addKeyValue("size", linkIds.size())
                     .log();
         }
     }

@@ -2,9 +2,14 @@ package backend.academy.linktracker.scrapper.schedule;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.handler.UpdateResult;
@@ -19,6 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class LinkUpdaterSchedulerTest {
@@ -36,6 +44,8 @@ class LinkUpdaterSchedulerTest {
 
     @Mock
     private HttpNotificationUpdateSender httpNotificationUpdateSender;
+
+    private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
     public void setUp() {
@@ -57,8 +67,8 @@ class LinkUpdaterSchedulerTest {
         link2.setId(2L);
 
         UpdateResult result = mock(UpdateResult.class);
-
-        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1, link2));
+        when(linksRepository.findLinksToCheck(pageable))
+                .thenReturn(new SliceImpl<>(List.of(link1, link2), pageable, false));
         // link1 вернет обновление, link2 - нет
         when(processorService.processLink(link1)).thenReturn(Optional.of(result));
         when(processorService.processLink(link2)).thenReturn(Optional.empty());
@@ -74,13 +84,13 @@ class LinkUpdaterSchedulerTest {
         verify(processorService, times(1)).handleUpdateResult(eq(result), eq(link1));
 
         // Проверяем, что в конце обновилось время проверки для всего батча
-        verify(linksRepository).updateLastCheckedAt(anyList(), any(OffsetDateTime.class));
+        verify(processorService).markBatchAsChecked(anyList(), any(OffsetDateTime.class));
     }
 
     @Test
     public void update_whenBatchIsEmpty_shouldDoNothing() {
         // Arrange
-        when(linksRepository.findLinksToCheck(anyInt())).thenReturn(List.of());
+        when(linksRepository.findLinksToCheck(pageable)).thenReturn(new SliceImpl<>(List.of(), pageable, false));
 
         // Act
         linkUpdaterScheduler.update();
@@ -100,12 +110,12 @@ class LinkUpdaterSchedulerTest {
         Link link3 = new Link("url3", OffsetDateTime.now());
         link3.setId(3L);
 
-        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1, link2, link3));
-
+        when(linksRepository.findLinksToCheck(pageable))
+                .thenReturn(new SliceImpl<>(List.of(link1, link2, link3), pageable, false));
         linkUpdaterScheduler.update();
 
         verify(processorService, times(3)).processLink(any(Link.class));
-        verify(linksRepository).updateLastCheckedAt(anyList(), any());
+        verify(processorService).markBatchAsChecked(anyList(), any());
     }
 
     @Test
@@ -113,7 +123,7 @@ class LinkUpdaterSchedulerTest {
 
         Link link1 = new Link("url1", OffsetDateTime.now());
         link1.setId(1L);
-        when(linksRepository.findLinksToCheck(10)).thenReturn(List.of(link1));
+        when(linksRepository.findLinksToCheck(pageable)).thenReturn(new SliceImpl<>(List.of(link1), pageable, false));
 
         when(processorService.processLink(link1)).thenThrow(new IllegalArgumentException("Unexpected error"));
 

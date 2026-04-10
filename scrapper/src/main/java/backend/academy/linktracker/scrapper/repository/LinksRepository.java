@@ -19,9 +19,7 @@ public interface LinksRepository extends BaseRepository<Link, Long> {
 
     Optional<Link> findByUrl(String url);
 
-    // Найти ссылки, отсортированные по lastCheckedAt (сначала самые старые), с лимитом
-    List<Link> findLinksToCheck(int batchSize);
+    Slice<Link> findLinksToCheck(Pageable pageable);
 
-    // Обновить время проверки (чтобы в следующий раз взять другие ссылки)
     void updateLastCheckedAt(List<Long> linkIds, OffsetDateTime checkedAt);
 }

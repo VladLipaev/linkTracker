@@ -20,6 +20,8 @@ public abstract class IntegrationEnvironment {
             .withEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://postgres:5432/scrapper")
             .withEnv("SPRING_DATASOURCE_USERNAME", "user")
             .withEnv("SPRING_DATASOURCE_PASSWORD", "pass")
+            .withEnv("SPRING_LIQUIBASE_ENABLED", "true")
+            .withEnv("SPRING_LIQUIBASE_CHANGE_LOG", "classpath:migrations/db.changelog-master.xml")
             .withEnv("BOT_BASE_URL", "http://bot:8080")
             .dependsOn(TestBeans.POSTGRES)
             .waitingFor(Wait.forHttp("/actuator/health").forStatusCode(200));

@@ -8,17 +8,20 @@ import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.entity.Subscription;
 import backend.academy.linktracker.scrapper.entity.SubscriptionId;
-import backend.academy.linktracker.scrapper.handler.LinkHandler;
 import backend.academy.linktracker.scrapper.handler.LinkValidator;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.repository.SubscriptionRepository;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +33,8 @@ public class DefaultLinksService implements LinksService {
     private final LinksRepository linksRepository;
     private final TgChatRepository tgChatRepository;
     private final LinkValidator linkValidator;
-    private final List<LinkHandler> linkHandlers;
     private final SubscriptionRepository subscriptionRepository;
+    private static final Integer BATCH_SIZE = 100;
 
     @Override
     @Transactional
@@ -51,7 +54,16 @@ public class DefaultLinksService implements LinksService {
                     .toList();
             return new ListLinksResponse(linkResponses, linkResponses.size());
         }
-        List<Subscription> subscriptions = subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag);
+
+        Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+        Slice<Subscription> subscriptionSlice =
+                subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag, pageable);
+        List<Subscription> subscriptions = new ArrayList<>(subscriptionSlice.getContent());
+        while (subscriptionSlice.hasNext()) {
+            subscriptionSlice = subscriptionRepository.findSubscriptionsByChatIdAndTag(
+                    chatId, tag, subscriptionSlice.nextPageable());
+            subscriptions.addAll(subscriptionSlice.getContent());
+        }
         List<LinkResponse> linkResponses = subscriptions.stream()
                 .map(sub ->
                         new LinkResponse(sub.getLink().getId(), sub.getLink().getUrl(), sub.getTags()))
@@ -103,7 +115,14 @@ public class DefaultLinksService implements LinksService {
                 .orElseThrow(
                         () -> new NoSuchElementException("Cсылка %s не найдена".formatted(removeLinkRequest.link())));
 
-        List<String> tags = subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId());
+        Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+        Slice<String> sliceTags = subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), pageable);
+        List<String> tags = new ArrayList<>(sliceTags.getContent());
+        while (sliceTags.hasNext()) {
+            sliceTags =
+                    subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), sliceTags.nextPageable());
+            tags.addAll(sliceTags.getContent());
+        }
 
         subscriptionRepository.deleteBySubscriptionId(new SubscriptionId(chatId, link.getId()));
         if (!subscriptionRepository.existsByLinkId(link.getId())) {

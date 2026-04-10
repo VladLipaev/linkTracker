@@ -33,6 +33,6 @@ public interface JpaLinksRepository extends JpaRepository<Link, Long> {
     @Query("UPDATE Link l SET l.lastCheckedAt = :checkedAt WHERE l.id IN :linkIds")
     void updateLastCheckedAt(@Param("linkIds") List<Long> linkIds, @Param("checkedAt") OffsetDateTime checkedAt);
 
-    @Query(value = "SELECT * FROM links ORDER BY checked_at ASC NULLS FIRST LIMIT :batchSize", nativeQuery = true)
-    List<Link> findLinksToCheck(@Param("batchSize") int batchSize);
+    @Query(value = "SELECT * FROM links ORDER BY checked_at NULLS FIRST", nativeQuery = true)
+    Slice<Link> findLinksToCheck(Pageable pageable);
 }

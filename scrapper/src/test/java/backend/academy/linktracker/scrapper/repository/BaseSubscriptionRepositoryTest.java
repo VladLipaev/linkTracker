@@ -20,7 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -35,9 +36,6 @@ public abstract class BaseSubscriptionRepositoryTest {
     private TgChatRepository tgChatRepository;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     private LinksRepository linksRepository;
 
     @Value("${app.db.access-type}")
@@ -47,6 +45,7 @@ public abstract class BaseSubscriptionRepositoryTest {
     private Long savedLinkId;
     private Chat chat;
     private Link link;
+    private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
     void setUp() {
@@ -92,14 +91,19 @@ public abstract class BaseSubscriptionRepositoryTest {
         subBob.setTags(List.of("hobby"));
         subscriptionRepository.save(subBob);
 
-        List<String> aliceTags = subscriptionRepository.findTagsByChatIdAndLinkId(chatAlice.getId(), linkId);
+        List<String> aliceTags = subscriptionRepository
+                .findTagsByChatIdAndLinkId(chatAlice.getId(), linkId, pageable)
+                .getContent();
         assertThat(aliceTags).containsExactly("work").doesNotContain("hobby");
 
-        List<String> bobTags = subscriptionRepository.findTagsByChatIdAndLinkId(chatBob.getId(), linkId);
+        List<String> bobTags = subscriptionRepository
+                .findTagsByChatIdAndLinkId(chatBob.getId(), linkId, pageable)
+                .getContent();
         assertThat(bobTags).containsExactly("hobby").doesNotContain("work");
 
-        List<Subscription> aliceSearch =
-                subscriptionRepository.findSubscriptionsByChatIdAndTag(chatAlice.getId(), "hobby");
+        List<Subscription> aliceSearch = subscriptionRepository
+                .findSubscriptionsByChatIdAndTag(chatAlice.getId(), "hobby", pageable)
+                .getContent();
         assertThat(aliceSearch).isEmpty();
     }
 
@@ -113,7 +117,9 @@ public abstract class BaseSubscriptionRepositoryTest {
 
         subscriptionRepository.save(sub);
 
-        List<String> tags = subscriptionRepository.findTagsByChatIdAndLinkId(savedChatId, savedLinkId);
+        List<String> tags = subscriptionRepository
+                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
+                .getContent();
         assertThat(tags).containsExactlyInAnyOrder("news", "social");
     }
 
@@ -126,12 +132,16 @@ public abstract class BaseSubscriptionRepositoryTest {
         sub.setTags(List.of("java"));
         subscriptionRepository.save(sub);
 
-        List<Subscription> results = subscriptionRepository.findSubscriptionsByChatIdAndTag(savedChatId, "java");
+        List<Subscription> results = subscriptionRepository
+                .findSubscriptionsByChatIdAndTag(savedChatId, "java", pageable)
+                .getContent();
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getLink().getId()).isEqualTo(savedLinkId);
 
-        assertThat(subscriptionRepository.findSubscriptionsByChatIdAndTag(savedChatId, "python"))
+        assertThat(subscriptionRepository
+                        .findSubscriptionsByChatIdAndTag(savedChatId, "python", pageable)
+                        .getContent())
                 .isEmpty();
     }
 
@@ -156,7 +166,8 @@ public abstract class BaseSubscriptionRepositoryTest {
                 .findById(new SubscriptionId(savedChatId, savedLinkId))
                 .isPresent());
         assertThat(subscriptionRepository
-                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId)
+                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
+                .getContent()
                 .contains("lalala"));
         linksRepository.deleteById(savedLinkId);
         // проверяем что все удалилось
@@ -165,7 +176,8 @@ public abstract class BaseSubscriptionRepositoryTest {
                 .findById(new SubscriptionId(savedChatId, savedLinkId))
                 .isEmpty());
         assertThat(!subscriptionRepository
-                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId)
+                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
+                .getContent()
                 .contains("lalala"));
     }
 
