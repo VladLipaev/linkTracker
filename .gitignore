@@ -57,3 +57,6 @@ bot/.env
 
 ### ENV ###
 *.env
+
+### db_files ###
+/my_db_files

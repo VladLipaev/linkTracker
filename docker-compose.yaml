@@ -33,4 +33,4 @@ services:
       - --password=postgres
       - update
     volumes:
-      - ./migrations:/changesets
+      - ./scrapper/src/main/resources/migrations:/changesets
