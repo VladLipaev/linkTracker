@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   application:
     name: bot
   grpc:
@@ -11,7 +15,8 @@ spring:
       default-channel:
         address: 'static://localhost:9081'
         negotiation-type: plaintext
-
+  kafka:
+    bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
 app:
   telegram:
     url: https://api.telegram.org/bot
@@ -21,10 +26,24 @@ app:
   scrapper:
     uri: http://localhost:8081
   communication:
-    mode: grpc # rest
+    client:
+      mode: grpc # rest
+    controller:
+      mode: kafka #grpc, rest
+  kafka:
+    retry:
+      attempts: 3
+      interval: 3000
+    concurrency: 3
+    schema-registry: http://localhost:9093
+    consumer:
+      group-id: "bot-fresh-group-v1"
 
 logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
   level:
     root: INFO
+    org:
+      springframework:
+        kafka: DEBUG

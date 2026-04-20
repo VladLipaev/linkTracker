@@ -11,7 +11,11 @@ import org.springframework.web.client.RestClient;
 public class ClientBeans {
 
     @Bean
-    @ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
+    @ConditionalOnProperty(
+            prefix = "app.communication.client",
+            name = "mode",
+            havingValue = "rest",
+            matchIfMissing = true)
     public RestClientScrapperRestClient restClientScrapperRestClient(
             @Value("${app.scrapper.uri:http://localhost:8081}") String scrapperBaseUri) {
         return new RestClientScrapperRestClient(

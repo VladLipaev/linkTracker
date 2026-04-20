@@ -1,0 +1,4 @@
+app:
+  communication:
+    client:
+      mode: rest

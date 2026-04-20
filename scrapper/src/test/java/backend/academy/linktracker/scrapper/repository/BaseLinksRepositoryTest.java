@@ -8,6 +8,10 @@ import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.repository.orm.JpaLinksRepositoryInvoker;
 import backend.academy.linktracker.scrapper.repository.raw.SqlLinksRepository;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxBatcher;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxWorker;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTemplateConfiguration;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTopicConfiguration;
 import jakarta.persistence.EntityManager;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -18,6 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.core.KafkaAdmin;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -33,6 +40,24 @@ public abstract class BaseLinksRepositoryTest {
 
     @Value("${app.db.access-type}")
     private String accessType;
+
+    @MockitoBean
+    private KafkaOutboxBatcher kafkaOutboxBatcher;
+
+    @MockitoBean
+    private KafkaOutboxWorker kafkaOutboxWorker;
+
+    @MockitoBean
+    private KafkaTopicConfiguration kafkaTopicConfiguration;
+
+    @MockitoBean
+    private KafkaTemplateConfiguration kafkaTemplateConfiguration;
+
+    @MockitoBean
+    private KafkaTemplate<?, ?> kafkaTemplate;
+
+    @MockitoBean
+    private KafkaAdmin kafkaAdmin;
 
     @Test
     @DisplayName("Проверка переключения access-type: используется правильная имплементация")

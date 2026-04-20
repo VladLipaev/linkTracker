@@ -6,6 +6,10 @@ import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Chat;
 // Предполагаемое имя ORM обертки
 import backend.academy.linktracker.scrapper.repository.raw.SqlTgChatRepository;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxBatcher;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxWorker;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTemplateConfiguration;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTopicConfiguration;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.core.KafkaAdmin;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -29,6 +36,24 @@ public abstract class BaseTgChatRepositoryTest {
 
     @Value("${app.db.access-type}")
     private String accessType;
+
+    @MockitoBean
+    private KafkaTemplate<?, ?> kafkaTemplate;
+
+    @MockitoBean
+    private KafkaAdmin kafkaAdmin;
+
+    @MockitoBean
+    private KafkaOutboxBatcher kafkaOutboxBatcher;
+
+    @MockitoBean
+    private KafkaOutboxWorker kafkaOutboxWorker;
+
+    @MockitoBean
+    private KafkaTopicConfiguration kafkaTopicConfiguration;
+
+    @MockitoBean
+    private KafkaTemplateConfiguration kafkaTemplateConfiguration;
 
     @Test
     @DisplayName("Проверка имплементации: должен использоваться правильный бин")

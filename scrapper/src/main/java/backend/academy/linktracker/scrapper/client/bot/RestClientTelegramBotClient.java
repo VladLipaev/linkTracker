@@ -9,7 +9,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RestClientTelegramBotRestClient implements TelegramBotRestClient {
+public class RestClientTelegramBotClient implements TelegramBotClient {
 
     private final RestClient restClient;
 

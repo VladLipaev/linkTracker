@@ -17,6 +17,8 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     show-sql: true
+  kafka:
+    bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
 app:
   stackoverflow:
     key: ${STACKOVERFLOW_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
@@ -35,7 +37,10 @@ app:
     thread-count: 4
     max-pages: 100
   communication:
-    mode: grpc # rest
+    client:
+      mode: kafka # rest, grpc
+    controller:
+      mode: grpc # rest
   db:
     access-type: ORM
   controller:
@@ -44,6 +49,8 @@ app:
     batch-size: 100
 
 
+  kafka:
+    schema-registry: http://localhost:9093
 
 logging:
   pattern:

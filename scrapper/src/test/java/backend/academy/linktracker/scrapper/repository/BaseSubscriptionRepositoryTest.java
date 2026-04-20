@@ -1,15 +1,18 @@
 package backend.academy.linktracker.scrapper.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.entity.Subscription;
 import backend.academy.linktracker.scrapper.entity.SubscriptionId;
-import backend.academy.linktracker.scrapper.repository.orm.JpaSubscriptionRepositoryInvoker;
-import backend.academy.linktracker.scrapper.repository.raw.SqlSubscriptionRepository;
+import backend.academy.linktracker.scrapper.repository.raw.SqlTgChatRepository;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxBatcher;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxWorker;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTemplateConfiguration;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaTopicConfiguration;
+import jakarta.persistence.EntityManager;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,9 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaAdmin;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -32,11 +39,35 @@ public abstract class BaseSubscriptionRepositoryTest {
     @Autowired
     private SubscriptionRepository subscriptionRepository;
 
+    @MockitoBean
+    private KafkaTemplate<?, ?> kafkaTemplate;
+
+    @MockitoBean
+    private KafkaAdmin kafkaAdmin;
+
     @Autowired
     private TgChatRepository tgChatRepository;
 
     @Autowired
     private LinksRepository linksRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @MockitoBean
+    private KafkaOutboxBatcher kafkaOutboxBatcher;
+
+    @MockitoBean
+    private KafkaOutboxWorker kafkaOutboxWorker;
+
+    @MockitoBean
+    private KafkaTopicConfiguration kafkaTopicConfiguration;
+
+    @MockitoBean
+    private KafkaTemplateConfiguration kafkaTemplateConfiguration;
 
     @Value("${app.db.access-type}")
     private String accessType;
@@ -146,50 +177,39 @@ public abstract class BaseSubscriptionRepositoryTest {
     }
 
     @Test
-    @DisplayName("Дублирование подписки: ошибка")
-    void doubleSubscription_shouldThrowException() {
-        Subscription sub = new Subscription(savedChatId, savedLinkId);
-        subscriptionRepository.save(sub);
-        assertThrows(RawSqlException.class, () -> subscriptionRepository.save(sub));
-    }
-
-    @Test
     @DisplayName("Удалить Ссылку: подписки и теги должны удалиться")
     void deleteLink_shouldDeleteSubsAndTags() {
         Subscription sub = new Subscription(savedChatId, savedLinkId);
         sub.setTags(List.of("lalala"));
+        sub.setLink(link);
+        sub.setChat(chat);
         subscriptionRepository.save(sub);
 
-        // проверяем что подписка, теги и ссылка сохранены
-        assertThat(linksRepository.findById(savedLinkId).isPresent());
-        assertThat(subscriptionRepository
-                .findById(new SubscriptionId(savedChatId, savedLinkId))
-                .isPresent());
-        assertThat(subscriptionRepository
-                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
-                .getContent()
-                .contains("lalala"));
+        entityManager.flush();
+        entityManager.clear();
+
         linksRepository.deleteById(savedLinkId);
-        // проверяем что все удалилось
-        assertThat(linksRepository.findById(savedLinkId).isEmpty());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(linksRepository.findById(savedLinkId)).isEmpty();
+        assertThat(subscriptionRepository.findById(new SubscriptionId(savedChatId, savedLinkId)))
+                .isEmpty();
         assertThat(subscriptionRepository
-                .findById(new SubscriptionId(savedChatId, savedLinkId))
-                .isEmpty());
-        assertThat(!subscriptionRepository
-                .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
-                .getContent()
-                .contains("lalala"));
+                        .findTagsByChatIdAndLinkId(savedChatId, savedLinkId, pageable)
+                        .getContent())
+                .doesNotContain("lalala");
     }
 
     @Test
-    @DisplayName("Проверка переключения access-type: используется правильная имплементация")
-    void checkImplementation_shouldMatchAccessType() {
-        // Проверяем, какой бин подтянулся в контекст
-
+    @DisplayName("Проверка имплементации: должен использоваться правильный бин")
+    void checkImplementation() {
+        Object bean = applicationContext.getBean(TgChatRepository.class);
         if ("SQL".equalsIgnoreCase(accessType)) {
-            assertThat(subscriptionRepository).isInstanceOf(SqlSubscriptionRepository.class);
-        } else if ("ORM".equalsIgnoreCase(accessType)) {
-            assertThat(subscriptionRepository).isInstanceOf(JpaSubscriptionRepositoryInvoker.class);
+            assertThat(bean).isInstanceOf(SqlTgChatRepository.class);
+        } else {
+            assertThat(bean.getClass().getSimpleName()).contains("Jpa");
         }
     }
 

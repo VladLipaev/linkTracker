@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/updates")
-@ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "app.communication.controller", name = "mode", havingValue = "rest")
 public class BotRestController {
 
     private final TelegramUpdateService telegramUpdateService;

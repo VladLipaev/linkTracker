@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "grpc")
-public class GrpcTelegramBotClient implements TelegramBotRestClient {
+@ConditionalOnProperty(prefix = "app.communication.client", name = "mode", havingValue = "grpc")
+public class GrpcTelegramBotClient implements TelegramBotClient {
 
     private final BotUpdateServiceGrpc.BotUpdateServiceBlockingStub botStub;
 

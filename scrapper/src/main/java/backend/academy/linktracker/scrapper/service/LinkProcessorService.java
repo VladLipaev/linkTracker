@@ -120,7 +120,7 @@ public class LinkProcessorService {
             }
 
             log.atInfo()
-                    .setMessage("Уведомления добавлены в очередь после коммита")
+                    .setMessage("Уведомление отправлено в outbox")
                     .addKeyValue("url", url)
                     .log();
         }

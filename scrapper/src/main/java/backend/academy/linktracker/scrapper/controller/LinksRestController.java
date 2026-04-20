@@ -21,7 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/links")
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "rest", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "app.communication.controller",
+        name = "mode",
+        havingValue = "rest",
+        matchIfMissing = true)
 public class LinksRestController {
 
     private final LinksService linksService;
