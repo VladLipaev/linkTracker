@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.repository.orm;
 
 import backend.academy.linktracker.scrapper.entity.Link;
+import jakarta.persistence.EntityManager;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Repository;
 public class JpaLinksRepositoryInvoker implements backend.academy.linktracker.scrapper.repository.LinksRepository {
 
     private final JpaLinksRepository jpaLinksRepository;
+    private final EntityManager entityManager;
 
     @Override
     public List<Long> findAllChatIdsByUrl(String url) {
@@ -59,7 +61,9 @@ public class JpaLinksRepositoryInvoker implements backend.academy.linktracker.sc
 
     @Override
     public Link save(Link entity) {
-        return jpaLinksRepository.save(entity);
+        entityManager.persist(entity);
+        entityManager.flush();
+        return entity;
     }
 
     @Override

@@ -12,11 +12,14 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -26,7 +29,9 @@ public class LinkProcessorService {
     private final List<LinkHandler> linkHandlers;
     private final LinksRepository linksRepository;
     private final NotificationUpdateSender updateSender;
-    private static final Integer BATCH_SIZE = 100;
+
+    @Value("${app.client.batch-size}")
+    private Integer BATCH_SIZE;
 
     public Optional<UpdateResult> processLink(Link link) {
         String url = link.getUrl();
@@ -104,20 +109,34 @@ public class LinkProcessorService {
         if (result.hasUpdate()) {
             Pageable pageable = PageRequest.of(0, BATCH_SIZE);
             Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(url, pageable);
+
             if (chatSlice.hasContent()) {
-                updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
+
             while (chatSlice.hasNext()) {
                 chatSlice = linksRepository.findAllChatIdsByUrl(url, chatSlice.nextPageable());
-                updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
+
             log.atInfo()
-                    .setMessage("Уведомление отправлено")
+                    .setMessage("Уведомления добавлены в очередь после коммита")
                     .addKeyValue("url", url)
                     .log();
         }
+    }
+
+    private void scheduleUpdate(LinkUpdate update) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                log.atInfo()
+                        .setMessage("У ссылки новое обновление!")
+                        .addKeyValue("url", update.url())
+                        .log();
+                updateSender.sendUpdate(update);
+            }
+        });
     }
 
     @Transactional

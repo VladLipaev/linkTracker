@@ -25,6 +25,7 @@ app:
   github:
     token: ${GITHUB_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
     base-url: https://api.github.com
+    per-page: 50
   bot:
     uri: http://localhost:8080
   scheduler:
@@ -32,10 +33,16 @@ app:
     interval: 30s
     batch-size: 100
     thread-count: 4
+    max-pages: 100
   communication:
     mode: grpc # rest
   db:
     access-type: ORM
+  controller:
+    batch-size: 100
+  client:
+    batch-size: 100
+
 
 
 logging:

@@ -29,7 +29,7 @@ public class LinkUpdaterScheduler {
     private final LinkProcessorService processorService;
     private final SchedulerProperties properties;
     private final NotificationUpdateSender updateSender;
-
+    private final SchedulerProperties schedulerProperties;
     private ExecutorService executorService;
 
     // Инициализируем ThreadPool с количеством потоков из конфига
@@ -51,7 +51,8 @@ public class LinkUpdaterScheduler {
 
         Pageable pageable = PageRequest.of(0, properties.batchSize());
         boolean hasMorePages = true;
-        while (hasMorePages) {
+        int page = 1;
+        while (hasMorePages && page <= 100) {
             Slice<Link> sliceBatch = linksRepository.findLinksToCheck(pageable);
             List<Link> batch = sliceBatch.getContent();
 
@@ -65,6 +66,7 @@ public class LinkUpdaterScheduler {
             hasMorePages = sliceBatch.hasNext();
             if (hasMorePages) {
                 pageable = sliceBatch.nextPageable();
+                page++;
             }
         }
         log.info("Батч-проверка ссылок завершена.");
@@ -85,7 +87,6 @@ public class LinkUpdaterScheduler {
         // checked_at параметр у ссылки используется только для установления порядка очереди на обработку скедулером
         // целостность же данных гарантируется параметром updated_at
         processorService.markBatchAsChecked(processedIds, batchStartTime);
-
         log.atInfo()
                 .setMessage("Батч ссылок успешно обработан.")
                 .addKeyValue("batch_size", batch.size())

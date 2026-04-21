@@ -40,7 +40,7 @@ class GitHubClientTest {
 
         // Act & Assert: Проверяем, что клиент выбросил наше кастомное исключение из .onStatus
         GitHubClientException exception = assertThrows(GitHubClientException.class, () -> {
-            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN);
+            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN, 1, 50);
         });
         WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/repos/test-owner/test-repo/issues"))
                 .withQueryParam("state", equalTo("all"))
@@ -60,7 +60,7 @@ class GitHubClientTest {
                         .withBody(invalidSchemaJson)));
 
         GitHubClientException exception = assertThrows(GitHubClientException.class, () -> {
-            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN);
+            gitHubClient.fetchRepo("test-owner", "test-repo", OffsetDateTime.MIN, 1, 50);
         });
         WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/repos/test-owner/test-repo/issues"))
                 .withQueryParam("state", equalTo("all"))

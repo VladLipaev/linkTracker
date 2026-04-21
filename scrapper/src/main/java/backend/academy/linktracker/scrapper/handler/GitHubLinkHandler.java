@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,6 +18,9 @@ public class GitHubLinkHandler implements LinkHandler {
             Pattern.compile("^https://github\\.com/(?<owner>[\\w.-]+)/(?<repo>[\\w.-]+)/?$");
 
     private final GitHubClient gitHubClient;
+
+    @Value("${app.github.per-page}")
+    private Integer perPage;
 
     @Override
     public boolean supports(String url) {
@@ -31,12 +35,10 @@ public class GitHubLinkHandler implements LinkHandler {
         }
         String owner = matcher.group("owner");
         String repo = matcher.group("repo");
-        List<GitHubIssueResponse> updates = gitHubClient.fetchRepo(owner, repo, lastUpdated);
-
-        if (updates == null || updates.isEmpty()) {
-            return new UpdateResult(false, lastUpdated, null);
-        }
-
+        int page = 1;
+        boolean hasMoreIssues = true;
+        boolean hasNewItems = false;
+        OffsetDateTime maxUpdate = lastUpdated;
         StringBuilder messageBuilder = new StringBuilder();
         messageBuilder
                 .append("Обновления в репозитории: *")
@@ -45,44 +47,55 @@ public class GitHubLinkHandler implements LinkHandler {
                 .append(repo)
                 .append("*\n\n");
 
-        boolean hasNewItems = false;
-        OffsetDateTime maxUpdate = lastUpdated;
+        while (hasMoreIssues) {
+            List<GitHubIssueResponse> updates = gitHubClient.fetchRepo(owner, repo, lastUpdated, page, perPage);
 
-        for (GitHubIssueResponse item : updates) {
-
-            if (!item.updatedAt().isAfter(lastUpdated)) {
-                continue;
+            if (updates == null || updates.isEmpty()) {
+                return new UpdateResult(false, lastUpdated, null);
             }
 
-            if (item.updatedAt().isAfter(maxUpdate)) {
-                maxUpdate = item.updatedAt();
+            for (GitHubIssueResponse item : updates) {
+
+                if (!item.updatedAt().isAfter(lastUpdated)) {
+                    continue;
+                }
+
+                if (item.updatedAt().isAfter(maxUpdate)) {
+                    maxUpdate = item.updatedAt();
+                }
+                if (item.createdAt().isAfter(lastUpdated)) {
+                    hasNewItems = true;
+
+                    String type = item.isPullRequest() ? "Pull Request" : "Issue";
+                    String safeBody = (item.body() != null && !item.body().isBlank()) ? item.body() : "Нет описания";
+                    String preview = safeBody.length() > 200 ? safeBody.substring(0, 200) + "..." : safeBody;
+
+                    messageBuilder
+                            .append("**Новый ")
+                            .append(type)
+                            .append(":** ")
+                            .append(item.title())
+                            .append("\n");
+                    messageBuilder.append("Автор: ").append(item.user().login()).append("\n");
+                    messageBuilder
+                            .append("Время создания: ")
+                            .append(item.createdAt())
+                            .append("\n");
+                    messageBuilder.append("Описание: ").append(preview).append("\n\n");
+                }
             }
-            if (item.createdAt().isAfter(lastUpdated)) {
-                hasNewItems = true;
 
-                String type = item.isPullRequest() ? "Pull Request" : "Issue";
-                String safeBody = (item.body() != null && !item.body().isBlank()) ? item.body() : "Нет описания";
-                String preview = safeBody.length() > 200 ? safeBody.substring(0, 200) + "..." : safeBody;
-
-                messageBuilder
-                        .append("**Новый ")
-                        .append(type)
-                        .append(":** ")
-                        .append(item.title())
-                        .append("\n");
-                messageBuilder.append("Автор: ").append(item.user().login()).append("\n");
-                messageBuilder
-                        .append("Время создания: ")
-                        .append(item.createdAt())
-                        .append("\n");
-                messageBuilder.append("Описание: ").append(preview).append("\n\n");
+            if (updates.size() < perPage) {
+                hasMoreIssues = false;
+            } else {
+                page++;
             }
         }
 
         if (hasNewItems) {
             return new UpdateResult(true, maxUpdate, messageBuilder.toString());
         } else {
-            return new UpdateResult(false, maxUpdate, null);
+            return new UpdateResult(maxUpdate.isAfter(lastUpdated), maxUpdate, null);
         }
     }
 }

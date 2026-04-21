@@ -45,6 +45,9 @@ class LinkUpdaterSchedulerTest {
     @Mock
     private HttpNotificationUpdateSender httpNotificationUpdateSender;
 
+    @Mock
+    private SchedulerProperties schedulerProperties;
+
     private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
@@ -52,8 +55,8 @@ class LinkUpdaterSchedulerTest {
         when(properties.threadCount()).thenReturn(2);
         when(properties.batchSize()).thenReturn(10);
 
-        linkUpdaterScheduler =
-                new LinkUpdaterScheduler(linksRepository, processorService, properties, httpNotificationUpdateSender);
+        linkUpdaterScheduler = new LinkUpdaterScheduler(
+                linksRepository, processorService, properties, httpNotificationUpdateSender, schedulerProperties);
 
         linkUpdaterScheduler.init();
     }

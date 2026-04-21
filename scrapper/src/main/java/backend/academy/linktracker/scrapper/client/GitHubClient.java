@@ -16,7 +16,7 @@ public class GitHubClient {
 
     private final RestClient restClient;
 
-    public List<GitHubIssueResponse> fetchRepo(String owner, String repo, OffsetDateTime since)
+    public List<GitHubIssueResponse> fetchRepo(String owner, String repo, OffsetDateTime since, int page, int perPage)
             throws GitHubClientException {
         try {
             List<GitHubIssueResponse> response = restClient
@@ -25,18 +25,23 @@ public class GitHubClient {
                             .path("/repos/{owner}/{repo}/issues")
                             .queryParam("state", "all")
                             .queryParam("since", since.toString())
+                            .queryParam("per_page", perPage)
+                            .queryParam("page", page)
                             .build(owner, repo))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, res) -> {
                         throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
                     })
                     .body(new ParameterizedTypeReference<>() {});
+
             if (response == null) {
                 throw new GitHubClientException(
                         "GitHub API error: Тело ответа не соответствует заявленной схеме (отсутствует updatedAt)");
             }
+
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в github", "github_request", "success");
             return response;
+
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
             throw new GitHubClientException("Github API error: " + e.getMessage());

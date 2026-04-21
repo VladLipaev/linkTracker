@@ -19,6 +19,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -34,7 +36,9 @@ public class DefaultLinksService implements LinksService {
     private final TgChatRepository tgChatRepository;
     private final LinkValidator linkValidator;
     private final SubscriptionRepository subscriptionRepository;
-    private static final Integer BATCH_SIZE = 100;
+
+    @Value("${app.controller.batch-size}")
+    private Integer BATCH_SIZE;
 
     @Override
     @Transactional
@@ -86,18 +90,27 @@ public class DefaultLinksService implements LinksService {
         if (linksRepository.findByChatIdAndUrl(chatId, url).isPresent()) {
             throw new LinkAlreadyExistsException("Ссылка %s для чата уже существует".formatted(request.link()));
         }
-        Link saved;
-        Optional<Link> link = linksRepository.findByUrl(url);
-        saved = link.orElseGet(() -> linksRepository.save(new Link(url, OffsetDateTime.now())));
-        Subscription subscription = new Subscription(chatId, saved.getId());
+        Link savedLink;
+        Optional<Link> existingLink = linksRepository.findByUrl(url);
+
+        if (existingLink.isPresent()) {
+            savedLink = existingLink.orElseThrow();
+        } else {
+            try {
+                savedLink = linksRepository.save(new Link(url, OffsetDateTime.now()));
+            } catch (DataIntegrityViolationException ex) {
+                savedLink = linksRepository.findByUrl(url).orElseThrow();
+            }
+        }
+        Subscription subscription = new Subscription(chatId, savedLink.getId());
         subscription.setChat(chat);
-        subscription.setLink(saved);
+        subscription.setLink(savedLink);
         List<String> tags = request.tags();
         if (!tags.isEmpty()) {
             subscription.setTags(request.tags());
         }
         subscriptionRepository.save(subscription);
-        return new LinkResponse(saved.getId(), saved.getUrl(), tags);
+        return new LinkResponse(savedLink.getId(), savedLink.getUrl(), tags);
     }
 
     @Override
