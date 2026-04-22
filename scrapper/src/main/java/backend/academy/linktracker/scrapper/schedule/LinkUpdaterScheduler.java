@@ -3,7 +3,6 @@ package backend.academy.linktracker.scrapper.schedule;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.service.LinkProcessorService;
-import backend.academy.linktracker.scrapper.service.NotificationUpdateSender;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
@@ -28,8 +27,6 @@ public class LinkUpdaterScheduler {
     private final LinksRepository linksRepository;
     private final LinkProcessorService processorService;
     private final SchedulerProperties properties;
-    private final NotificationUpdateSender updateSender;
-    private final SchedulerProperties schedulerProperties;
     private ExecutorService executorService;
 
     // Инициализируем ThreadPool с количеством потоков из конфига
@@ -52,7 +49,7 @@ public class LinkUpdaterScheduler {
         Pageable pageable = PageRequest.of(0, properties.batchSize());
         boolean hasMorePages = true;
         int page = 1;
-        while (hasMorePages && page <= 100) {
+        while (hasMorePages && page <= properties.maxPages()) {
             Slice<Link> sliceBatch = linksRepository.findLinksToCheck(pageable);
             List<Link> batch = sliceBatch.getContent();
 
@@ -78,7 +75,16 @@ public class LinkUpdaterScheduler {
         List<List<Link>> chunks = partitionList(batch, chunkSize);
 
         List<CompletableFuture<Void>> futures = chunks.stream()
-                .map(chunk -> CompletableFuture.runAsync(() -> processChunk(chunk), executorService))
+                .map(chunk -> CompletableFuture.runAsync(() -> processChunk(chunk), executorService)
+                        .whenComplete((result, ex) -> {
+                            if (ex != null) {
+                                log.atError()
+                                        .setMessage("непредвиденная ошибка во время обработки чанка")
+                                        .setCause(ex)
+                                        .addKeyValue("error.message", ex.getMessage())
+                                        .log();
+                            }
+                        }))
                 .toList();
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();

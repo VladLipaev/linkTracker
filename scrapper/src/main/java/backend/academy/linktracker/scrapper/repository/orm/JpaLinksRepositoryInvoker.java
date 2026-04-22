@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -60,6 +61,7 @@ public class JpaLinksRepositoryInvoker implements backend.academy.linktracker.sc
     }
 
     @Override
+    @Transactional
     public Link save(Link entity) {
         entityManager.persist(entity);
         entityManager.flush();

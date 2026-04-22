@@ -18,8 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -111,32 +109,16 @@ public class LinkProcessorService {
             Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(url, pageable);
 
             if (chatSlice.hasContent()) {
-                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
 
             while (chatSlice.hasNext()) {
                 chatSlice = linksRepository.findAllChatIdsByUrl(url, chatSlice.nextPageable());
-                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
-
-            log.atInfo()
-                    .setMessage("Уведомление отправлено в outbox")
-                    .addKeyValue("url", url)
-                    .log();
         }
-    }
-
-    private void scheduleUpdate(LinkUpdate update) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                log.atInfo()
-                        .setMessage("У ссылки новое обновление!")
-                        .addKeyValue("url", update.url())
-                        .log();
-                updateSender.sendUpdate(update);
-            }
-        });
     }
 
     @Transactional

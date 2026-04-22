@@ -26,13 +26,17 @@ public class KafkaTopicConfiguration {
     }
 
     @Bean
-    public NewTopic newTopic() {
-        return TopicBuilder.name("link-updates-topic")
+    public NewTopic newTopic(
+            @Value("${app.kafka.topic.name:bot-updates-topic}") String topicName,
+            @Value("${app.kafka.topic.partitions:3}") int partitions,
+            // Значение по умолчанию 3 (для прода), но мы сможем его переопределить!
+            @Value("${app.kafka.topic.replicas:3}") int replicas) {
+        return TopicBuilder.name(topicName)
                 // сделал 3 партиции так как у нас 3 брокера чтобы равномерно была распределена нагрузка между ними
-                .partitions(3)
+                .partitions(partitions)
                 // сделал 3 реплики то есть чтобы каждая партиция хранилась на разных брокерах если какой то из них
                 // слетит чтобы не потерять сообщения
-                .replicas(3)
+                .replicas(replicas)
                 .build();
     }
 }

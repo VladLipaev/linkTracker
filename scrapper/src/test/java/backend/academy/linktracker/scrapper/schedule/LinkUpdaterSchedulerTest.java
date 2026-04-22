@@ -15,7 +15,6 @@ import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.handler.UpdateResult;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.service.LinkProcessorService;
-import backend.academy.linktracker.scrapper.service.SyncNotificationUpdateSender;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -42,21 +41,15 @@ class LinkUpdaterSchedulerTest {
     @Mock
     private SchedulerProperties properties;
 
-    @Mock
-    private SyncNotificationUpdateSender syncNotificationUpdateSender;
-
-    @Mock
-    private SchedulerProperties schedulerProperties;
-
     private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
     public void setUp() {
         when(properties.threadCount()).thenReturn(2);
         when(properties.batchSize()).thenReturn(10);
+        when(properties.maxPages()).thenReturn(100);
 
-        linkUpdaterScheduler =
-                new LinkUpdaterScheduler(linksRepository, processorService, properties, syncNotificationUpdateSender);
+        linkUpdaterScheduler = new LinkUpdaterScheduler(linksRepository, processorService, properties);
 
         linkUpdaterScheduler.init();
     }

@@ -19,9 +19,9 @@ public class KafkaConfiguration {
     public static final GenericContainer<?> SCHEMA_REGISTRY = new GenericContainer<>(
                     DockerImageName.parse("confluentinc/cp-schema-registry:7.5.0"))
             .withNetwork(SHARED_NETWORK)
-            .withExposedPorts(8081)
+            .withExposedPorts(9081)
             .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
-            .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
+            .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:9081")
             .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://broker:9093")
             .dependsOn(KAFKA_CONTAINER)
             .waitingFor(Wait.forHttp("/subjects").forStatusCode(200));

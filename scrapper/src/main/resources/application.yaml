@@ -47,10 +47,12 @@ app:
     batch-size: 100
   client:
     batch-size: 100
-
-
   kafka:
     schema-registry: http://localhost:9093
+    topic:
+      name: bot-updates-topic
+      partitions: 3
+      replicas: 3
 
 logging:
   pattern:
