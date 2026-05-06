@@ -7,13 +7,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class LinkUpdateToAvroMapper {
 
-    public LinkUpdateAvro linkUpdateAvro(LinkUpdate payload){
+    public LinkUpdateAvro linkUpdateAvro(LinkUpdate payload) {
         return LinkUpdateAvro.newBuilder()
-            .setId(payload.id())
-            .setDescription(payload.description())
-            .setUrl(payload.url())
-            .setTgChatIds(payload.tgChatIds())
-            .build();
+                .setId(payload.id())
+                .setDescription(payload.description())
+                .setUrl(payload.url())
+                .setTgChatIds(payload.tgChatIds())
+                .build();
     }
-
 }

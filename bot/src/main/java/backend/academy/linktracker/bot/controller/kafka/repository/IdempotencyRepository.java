@@ -15,7 +15,10 @@ public interface IdempotencyRepository extends JpaRepository<Event, UUID> {
     void deleteOldEvents(OffsetDateTime threshold);
 
     @Modifying
-    @Query(value = "INSERT INTO processed_event (event_id, processed_at) VALUES (:eventId, :time) ON CONFLICT DO NOTHING", nativeQuery = true)
+    @Query(
+            value =
+                    "INSERT INTO processed_event (event_id, processed_at) VALUES (:eventId, :time) ON CONFLICT DO NOTHING",
+            nativeQuery = true)
     int trySave(@Param("eventId") UUID eventId, @Param("time") OffsetDateTime time);
 
     void removeEventById(UUID id);

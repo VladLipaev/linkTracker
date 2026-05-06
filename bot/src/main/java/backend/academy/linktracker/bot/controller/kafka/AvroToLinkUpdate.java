@@ -9,9 +9,9 @@ public class AvroToLinkUpdate {
 
     public LinkUpdate avroToLinkUpdate(LinkUpdateAvro linkUpdateAvro) {
         return new LinkUpdate(
-            linkUpdateAvro.getId(),
-            linkUpdateAvro.getUrl().toString(),
-            linkUpdateAvro.getDescription().toString(),
-            linkUpdateAvro.getTgChatIds());
+                linkUpdateAvro.getId(),
+                linkUpdateAvro.getUrl().toString(),
+                linkUpdateAvro.getDescription().toString(),
+                linkUpdateAvro.getTgChatIds());
     }
 }

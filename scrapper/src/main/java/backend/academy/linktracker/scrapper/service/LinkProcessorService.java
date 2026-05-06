@@ -83,12 +83,12 @@ public class LinkProcessorService {
                 Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), pageable);
                 if (chatSlice.hasContent()) {
                     updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
+                            new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
                 }
                 while (chatSlice.hasNext()) {
                     chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), chatSlice.nextPageable());
                     updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
+                            new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
                 }
             });
         } catch (Exception ex) {

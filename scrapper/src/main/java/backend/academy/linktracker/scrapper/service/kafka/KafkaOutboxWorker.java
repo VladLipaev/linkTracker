@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class KafkaOutboxWorker {
 
     private final KafkaOutboxBatcher kafkaOutboxBatcher;
+
     @Value("${app.kafka.outbox.max-batches:10}")
     private Integer maxBatchesPerRun;
 
@@ -33,15 +34,16 @@ public class KafkaOutboxWorker {
 
             if (batchesProcessed > 0) {
                 log.atInfo()
-                    .setMessage("Батч-отправка завершена")
-                    .addKeyValue("batches.processed", batchesProcessed)
-                    .log();
+                        .setMessage("Батч-отправка завершена")
+                        .addKeyValue("batches.processed", batchesProcessed)
+                        .log();
             }
         } catch (Exception e) {
             log.atError()
-                .setMessage("Ошибка при обработке Outbox-батча. Прерывание цикла до следующего запуска планировщика.")
-                .setCause(e)
-                .log();
+                    .setMessage(
+                            "Ошибка при обработке Outbox-батча. Прерывание цикла до следующего запуска планировщика.")
+                    .setCause(e)
+                    .log();
         }
     }
 

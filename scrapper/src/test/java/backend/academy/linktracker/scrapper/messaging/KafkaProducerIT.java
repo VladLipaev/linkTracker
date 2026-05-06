@@ -81,8 +81,8 @@ public class KafkaProducerIT {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
-            "app.kafka.schema-registry",
-            () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
+                "app.kafka.schema-registry",
+                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
     }
 
     @BeforeEach
@@ -98,7 +98,7 @@ public class KafkaProducerIT {
     @Test
     void producerSendMessage_topicAndMessageStructureShouldBeAsExpected() {
         OutBoxMessage outBoxMessage = new OutBoxMessage(
-            UUID.randomUUID(), objectMapper.writeValueAsString(linkUpdate), String.valueOf(linkUpdate.id()));
+                UUID.randomUUID(), objectMapper.writeValueAsString(linkUpdate), String.valueOf(linkUpdate.id()));
         outBoxRepository.save(outBoxMessage);
 
         SendResult<String, LinkUpdateAvro> dummyResult = mock(SendResult.class);
@@ -123,7 +123,7 @@ public class KafkaProducerIT {
     void updateToOutbox_shouldSaveToOutboxTable() {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageTakenOptional =
-            outBoxRepository.findByPartitionKey(String.valueOf(linkUpdate.id()));
+                outBoxRepository.findByPartitionKey(String.valueOf(linkUpdate.id()));
 
         assertThat(outBoxMessageTakenOptional).isPresent();
 
@@ -140,7 +140,7 @@ public class KafkaProducerIT {
     void sendUpdate_valid_shouldChangeStatusOfOutboxMessageToSent() {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageOptional1 =
-            outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
+                outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
 
         assertThat(outBoxMessageOptional1).isPresent();
         OutBoxMessage outBoxMessage1 = outBoxMessageOptional1.get();
@@ -149,12 +149,12 @@ public class KafkaProducerIT {
         ProducerRecord<String, LinkUpdateAvro> producerRecord = mock(ProducerRecord.class);
         RecordMetadata recordMetadata = mock(RecordMetadata.class);
         when(kafkaTemplate.send(Mockito.any(ProducerRecord.class)))
-            .thenReturn(CompletableFuture.completedFuture(new SendResult<>(producerRecord, recordMetadata)));
+                .thenReturn(CompletableFuture.completedFuture(new SendResult<>(producerRecord, recordMetadata)));
 
         kafkaOutboxWorker.sendToKafka();
 
         Optional<OutBoxMessage> outBoxMessageOptional2 =
-            outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
+                outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
 
         assertThat(outBoxMessageOptional2).isPresent();
         OutBoxMessage outBoxMessage2 = outBoxMessageOptional2.get();
@@ -165,7 +165,7 @@ public class KafkaProducerIT {
     void sendUpdate_inValid_shouldChangeStatusOfOutboxMessageToError() {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageOptional1 =
-            outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
+                outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
 
         assertThat(outBoxMessageOptional1).isPresent();
         OutBoxMessage outBoxMessage1 = outBoxMessageOptional1.get();
@@ -179,7 +179,7 @@ public class KafkaProducerIT {
         kafkaOutboxWorker.sendToKafka();
 
         Optional<OutBoxMessage> outBoxMessageOptional2 =
-            outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
+                outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
 
         assertThat(outBoxMessageOptional2).isPresent();
         OutBoxMessage outBoxMessage2 = outBoxMessageOptional2.get();

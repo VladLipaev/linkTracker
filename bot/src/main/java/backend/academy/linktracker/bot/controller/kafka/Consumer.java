@@ -35,11 +35,10 @@ public class Consumer {
     private final AvroToLinkUpdate avroToLinkUpdate;
 
     @KafkaListener(topics = "${app.kafka.topic.name:bot-updates-topic}")
-    public void listen(LinkUpdateAvro linkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
-        if (eventIdBytes == null){
-            log.atError()
-                .setMessage("event-id не был указан")
-                .log();
+    public void listen(
+            LinkUpdateAvro linkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
+        if (eventIdBytes == null) {
+            log.atError().setMessage("event-id не был указан").log();
             throw new NullPointerException("event-id не был указан");
         }
         LinkUpdate linkUpdate = avroToLinkUpdate.avroToLinkUpdate(linkUpdateAvro);
@@ -59,9 +58,9 @@ public class Consumer {
         UUID eventId = UUID.fromString(eventIdString);
         if (!idempotencyService.tryLock(eventId)) {
             log.atWarn()
-                .setMessage("данное сообщение уже обрабатывается или было обработано")
-                .addKeyValue("message.id", eventId)
-                .log();
+                    .setMessage("данное сообщение уже обрабатывается или было обработано")
+                    .addKeyValue("message.id", eventId)
+                    .log();
             return;
         }
         try {
