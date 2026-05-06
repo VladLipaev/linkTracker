@@ -53,6 +53,15 @@ app:
       name: bot-updates-topic
       partitions: 3
       replicas: 3
+    send-delay: 60s
+    outbox:
+      max-retries: 5
+      delay: 120s
+      max-batches: 10
+      batch-send-size: 500
+      batch-clean-size: 5000
+    min-insync-replicas: 2
+
 
 logging:
   pattern:

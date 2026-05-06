@@ -38,6 +38,8 @@ app:
     schema-registry: http://localhost:9093
     consumer:
       group-id: "bot-fresh-group-v1"
+    topic:
+      name: bot-updates-topic
 
 logging:
   pattern:
