@@ -14,14 +14,13 @@ public interface OutBoxRepository extends JpaRepository<OutBoxMessage, UUID> {
 
     @Query(value = """
     SELECT * FROM outbox_link_update
-    WHERE status IN ('new', 'error') AND retry_count < 5
+    WHERE status IN ('new', 'error') AND retry_count < :maxRetries
     ORDER BY created_at
     LIMIT :limit
     FOR UPDATE SKIP LOCKED
     """, nativeQuery = true)
-    List<OutBoxMessage> findNewWithLock(@Param("limit") int limit);
+    List<OutBoxMessage> findNewWithLock(@Param("limit") Integer limit, @Param("maxRetries") Integer maxRetries);
 
-    // ERROR'Ы пока что НЕ УДАЛЯЛ
     @Modifying
     @Query(
             value =

@@ -3,7 +3,7 @@ package backend.academy.linktracker.scrapper.messaging;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat; // Обрати внимание, импорт изменен на общий Assertions
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,26 +97,17 @@ public class KafkaProducerIT {
 
     @Test
     void producerSendMessage_topicAndMessageStructureShouldBeAsExpected() {
-        // 1. Подготавливаем базу данных
         OutBoxMessage outBoxMessage = new OutBoxMessage(
                 UUID.randomUUID(), objectMapper.writeValueAsString(linkUpdate), String.valueOf(linkUpdate.id()));
         outBoxRepository.save(outBoxMessage);
 
-        // 2. НАСТРОЙКА МОКА:
-        // Создаем заглушку для результата отправки (на случай, если внутри whenComplete
-        // ты проверяешь смещения (offsets) или другие данные)
         SendResult<String, LinkUpdateAvro> dummyResult = mock(SendResult.class);
-
-        // Оборачиваем заглушку в успешно завершенный CompletableFuture
         CompletableFuture<SendResult<String, LinkUpdateAvro>> future = CompletableFuture.completedFuture(dummyResult);
 
-        // Говорим Mockito: когда вызовут send() с любым ProducerRecord - верни эту футуру
         when(kafkaTemplate.send(Mockito.any(ProducerRecord.class))).thenReturn(future);
 
-        // 3. Вызываем тестируемый метод
         kafkaOutboxWorker.sendToKafka();
 
-        // 4. Проверяем
         ArgumentCaptor<ProducerRecord<String, LinkUpdateAvro>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
         verify(kafkaTemplate).send(captor.capture());
 
@@ -133,13 +124,16 @@ public class KafkaProducerIT {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageTakenOptional =
                 outBoxRepository.findByPartitionKey(String.valueOf(linkUpdate.id()));
-        assertThat(outBoxMessageTakenOptional.isPresent());
+
+        assertThat(outBoxMessageTakenOptional).isPresent();
+
         OutBoxMessage outBoxMessageTaken = outBoxMessageTakenOptional.get();
         LinkUpdate linkUpdateTaken = objectMapper.readValue(outBoxMessageTaken.getPayload(), LinkUpdate.class);
-        assertThat(linkUpdate.id().equals(linkUpdateTaken.id()));
-        assertThat(linkUpdate.url().equals(linkUpdateTaken.url()));
-        assertThat(linkUpdate.description().equals(linkUpdateTaken.description()));
-        assertThat(linkUpdate.tgChatIds().equals(linkUpdateTaken.tgChatIds()));
+
+        assertThat(linkUpdateTaken.id()).isEqualTo(linkUpdate.id());
+        assertThat(linkUpdateTaken.url()).isEqualTo(linkUpdate.url());
+        assertThat(linkUpdateTaken.description()).isEqualTo(linkUpdate.description());
+        assertThat(linkUpdateTaken.tgChatIds()).isEqualTo(linkUpdate.tgChatIds());
     }
 
     @Test
@@ -147,18 +141,24 @@ public class KafkaProducerIT {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageOptional1 =
                 outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
-        assertThat(outBoxMessageOptional1.isPresent());
+
+        assertThat(outBoxMessageOptional1).isPresent();
         OutBoxMessage outBoxMessage1 = outBoxMessageOptional1.get();
-        assertThat(outBoxMessage1.getStatus().equals("new"));
+        assertThat(outBoxMessage1.getStatus()).isEqualTo("new");
+
         ProducerRecord<String, LinkUpdateAvro> producerRecord = mock(ProducerRecord.class);
         RecordMetadata recordMetadata = mock(RecordMetadata.class);
         when(kafkaTemplate.send(Mockito.any(ProducerRecord.class)))
-                .thenReturn(CompletableFuture.completedFuture(new SendResult(producerRecord, recordMetadata)));
+                .thenReturn(CompletableFuture.completedFuture(new SendResult<>(producerRecord, recordMetadata)));
+
+        kafkaOutboxWorker.sendToKafka();
+
         Optional<OutBoxMessage> outBoxMessageOptional2 =
                 outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
-        assertThat(outBoxMessageOptional2.isPresent());
+
+        assertThat(outBoxMessageOptional2).isPresent();
         OutBoxMessage outBoxMessage2 = outBoxMessageOptional2.get();
-        assertThat(outBoxMessage2.getStatus().equals("sent"));
+        assertThat(outBoxMessage2.getStatus()).isEqualTo("sent");
     }
 
     @Test
@@ -166,15 +166,23 @@ public class KafkaProducerIT {
         notificationUpdateSender.sendUpdate(linkUpdate);
         Optional<OutBoxMessage> outBoxMessageOptional1 =
                 outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
-        assertThat(outBoxMessageOptional1.isPresent());
+
+        assertThat(outBoxMessageOptional1).isPresent();
         OutBoxMessage outBoxMessage1 = outBoxMessageOptional1.get();
-        assertThat(outBoxMessage1.getStatus().equals("new"));
-        when(kafkaTemplate.send(Mockito.any(ProducerRecord.class)))
-                .thenThrow(new IllegalArgumentException("record cannot be null"));
+        assertThat(outBoxMessage1.getStatus()).isEqualTo("new");
+
+        CompletableFuture<SendResult<String, LinkUpdateAvro>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new IllegalArgumentException("record cannot be null"));
+
+        when(kafkaTemplate.send(Mockito.any(ProducerRecord.class))).thenReturn(failedFuture);
+
+        kafkaOutboxWorker.sendToKafka();
+
         Optional<OutBoxMessage> outBoxMessageOptional2 =
                 outBoxRepository.findByPartitionKey(linkUpdate.id().toString());
-        assertThat(outBoxMessageOptional2.isPresent());
+
+        assertThat(outBoxMessageOptional2).isPresent();
         OutBoxMessage outBoxMessage2 = outBoxMessageOptional2.get();
-        assertThat(outBoxMessage2.getStatus().equals("error"));
+        assertThat(outBoxMessage2.getStatus()).isEqualTo("error");
     }
 }

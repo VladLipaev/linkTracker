@@ -32,10 +32,16 @@ public class Consumer {
     private final TelegramUpdateService telegramUpdateService;
     private final IdempotencyService idempotencyService;
     private final Validator validator;
+    private final AvroToLinkUpdate avroToLinkUpdate;
 
-    @KafkaListener(topics = "link-updates-topic")
-    public void listen(LinkUpdateAvro linkUpdateAvro, @Header("event-id") byte[] eventIdBytes) {
-        LinkUpdate linkUpdate = avroToLinkUpdate(linkUpdateAvro);
+    @KafkaListener(topics = "${app.kafka.topic.name:bot-updates-topic}")
+    public void listen(
+            LinkUpdateAvro linkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
+        if (eventIdBytes == null) {
+            log.atError().setMessage("event-id не был указан").log();
+            throw new NullPointerException("event-id не был указан");
+        }
+        LinkUpdate linkUpdate = avroToLinkUpdate.avroToLinkUpdate(linkUpdateAvro);
         Set<ConstraintViolation<LinkUpdate>> violations = validator.validate(linkUpdate);
         if (!violations.isEmpty()) {
             log.atError()
@@ -50,33 +56,23 @@ public class Consumer {
         }
         String eventIdString = new String(eventIdBytes, StandardCharsets.UTF_8);
         UUID eventId = UUID.fromString(eventIdString);
-
-        if (idempotencyService.exists(eventId)) {
+        if (!idempotencyService.tryLock(eventId)) {
             log.atWarn()
-                    .setMessage("данное сообщение уже было обработано")
+                    .setMessage("данное сообщение уже обрабатывается или было обработано")
                     .addKeyValue("message.id", eventId)
                     .log();
             return;
         }
         try {
             telegramUpdateService.postUpdate(linkUpdate);
-            idempotencyService.markAsProcessed(eventId);
             log.info("Уведомление было отправлено пользователям");
         } catch (ResourceAccessException e) {
             log.atWarn()
                     .setMessage("Соединение с тг прервано, повторная отправка сообщения...")
                     .setCause(e)
                     .log();
+            idempotencyService.removeEvent(eventId);
             throw new RetryableException(e);
         }
-    }
-
-    private LinkUpdate avroToLinkUpdate(LinkUpdateAvro linkUpdateAvro) {
-
-        return new LinkUpdate(
-                linkUpdateAvro.getId(),
-                linkUpdateAvro.getUrl().toString(),
-                linkUpdateAvro.getDescription().toString(),
-                linkUpdateAvro.getTgChatIds());
     }
 }

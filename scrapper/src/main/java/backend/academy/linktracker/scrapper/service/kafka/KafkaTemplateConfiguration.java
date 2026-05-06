@@ -33,6 +33,13 @@ public class KafkaTemplateConfiguration {
         prodConf.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         prodConf.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
         prodConf.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistry);
+        prodConf.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        prodConf.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
+        prodConf.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 10000);
+        prodConf.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 2000);
+        prodConf.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        prodConf.put(ProducerConfig.LINGER_MS_CONFIG, 5);
+        prodConf.put(ProducerConfig.BATCH_SIZE_CONFIG, 32 * 1024);
         return new DefaultKafkaProducerFactory<>(prodConf);
     }
 

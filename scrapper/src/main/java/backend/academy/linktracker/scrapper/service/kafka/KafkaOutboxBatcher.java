@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -33,12 +34,20 @@ public class KafkaOutboxBatcher {
     private final KafkaTemplate<String, LinkUpdateAvro> kafkaTemplate;
     private final NewTopic newTopic;
     private final ObjectMapper objectMapper;
-    private static final Integer BATCH_SEND_SIZE = 500;
-    private static final Integer BATCH_CLEAN_SIZE = 5000;
+    private final LinkUpdateToAvroMapper mapper;
+
+    @Value("${app.kafka.outbox.batch-send-size:500}")
+    private Integer BATCH_SEND_SIZE;
+
+    @Value("${app.kafka.outbox.batch-clean-size:5000}")
+    private Integer BATCH_CLEAN_SIZE;
+
+    @Value("${app.kafka.outbox.max-retries:5}")
+    private Integer maxRetries;
 
     @Transactional
     public int sendBatchToKafka() {
-        List<OutBoxMessage> messages = outBoxRepository.findNewWithLock(BATCH_SEND_SIZE);
+        List<OutBoxMessage> messages = outBoxRepository.findNewWithLock(BATCH_SEND_SIZE, maxRetries);
         if (messages.isEmpty()) return 0;
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
@@ -46,12 +55,7 @@ public class KafkaOutboxBatcher {
 
         for (OutBoxMessage message : messages) {
             LinkUpdate payload = objectMapper.readValue(message.getPayload(), LinkUpdate.class);
-            LinkUpdateAvro linkUpdateAvro = LinkUpdateAvro.newBuilder()
-                    .setId(payload.id())
-                    .setDescription(payload.description())
-                    .setUrl(payload.url())
-                    .setTgChatIds(payload.tgChatIds())
-                    .build();
+            LinkUpdateAvro linkUpdateAvro = mapper.linkUpdateAvro(payload);
             ProducerRecord<String, LinkUpdateAvro> record =
                     new ProducerRecord<>(newTopic.name(), message.getPartitionKey(), linkUpdateAvro);
             record.headers().add("event-id", message.getId().toString().getBytes(StandardCharsets.UTF_8));

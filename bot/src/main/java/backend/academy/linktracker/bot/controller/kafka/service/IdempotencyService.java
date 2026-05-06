@@ -20,18 +20,21 @@ public class IdempotencyService {
     }
 
     @Transactional
-    public void markAsProcessed(UUID eventId) {
-        Event event = new Event();
-        event.setId(eventId);
-        event.setProcessedAt(OffsetDateTime.now());
-        idempotencyRepository.save(event);
+    public boolean tryLock(UUID eventId) {
+        return idempotencyRepository.trySave(eventId, OffsetDateTime.now()) > 0;
     }
 
     public boolean exists(UUID eventId) {
         return idempotencyRepository.existsById(eventId);
     }
 
+    @Transactional
     public void deleteOldEvents(OffsetDateTime threshold) {
         idempotencyRepository.deleteOldEvents(threshold);
+    }
+
+    @Transactional
+    public void removeEvent(UUID eventId) {
+        idempotencyRepository.removeEventById(eventId);
     }
 }

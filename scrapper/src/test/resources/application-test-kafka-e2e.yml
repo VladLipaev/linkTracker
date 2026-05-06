@@ -1,0 +1,25 @@
+app:
+  kafka:
+    send-delay: 5s
+    retry:
+      attempts: 3
+      interval: 3000
+    concurrency: 3
+    schema-registry: http://localhost:9093
+    consumer:
+      group-id: "e2e-fresh-group-v1"
+    topic:
+      name: bot-updates-topic
+  telegram:
+    token: dummy-test-token
+    url: http://localhost:8080/dummy-url
+  communication:
+    controller:
+      mode: kafka
+
+spring:
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+  main:
+    allow-bean-definition-overriding: true
