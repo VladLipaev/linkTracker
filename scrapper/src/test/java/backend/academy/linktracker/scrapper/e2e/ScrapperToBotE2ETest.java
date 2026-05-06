@@ -1,5 +1,8 @@
 package backend.academy.linktracker.scrapper.e2e;
 
+import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
+import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
+import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -24,6 +27,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -32,6 +37,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import({TestBeans.class, KafkaConfiguration.class, ScrapperToBotE2ETest.MockBotConfig.class})
 @ActiveProfiles({"test-kafka-e2e"})
 public class ScrapperToBotE2ETest {
+
+    static {
+        POSTGRES.start();
+        KAFKA_CONTAINER.start();
+        SCHEMA_REGISTRY.start();
+    }
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
+        registry.add("app.kafka.schema-registry",
+            () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
+    }
 
     @Autowired
     NotificationUpdateSender notificationUpdateSender;
