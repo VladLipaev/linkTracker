@@ -52,7 +52,7 @@ app:
     client:
       mode: kafka # rest, grpc
     controller:
-      mode: rest # rest
+      mode: grpc # rest
   db:
     access-type: ORM
   controller:

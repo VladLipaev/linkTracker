@@ -13,7 +13,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class CacheConfiguration {
@@ -24,21 +23,17 @@ public class CacheConfiguration {
     @Bean(destroyMethod = "shutdown")
     public ClientResources lettuceClientResources() {
         return DefaultClientResources.builder()
-            .socketAddressResolver(MappingSocketAddressResolver.create(
-                DnsResolvers.JVM_DEFAULT,
-                hostAndPort -> HostAndPort.of(host, hostAndPort.getPort())
-            ))
-            .build();
+                .socketAddressResolver(MappingSocketAddressResolver.create(
+                        DnsResolvers.JVM_DEFAULT, hostAndPort -> HostAndPort.of(host, hostAndPort.getPort())))
+                .build();
     }
 
     @Bean
-    public RedisTemplate<String, ListLinksResponse> redisTemplate(
-        RedisConnectionFactory redisConnectionFactory){
+    public RedisTemplate<String, ListLinksResponse> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, ListLinksResponse> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new JacksonJsonRedisSerializer<>(ListLinksResponse.class));
         return redisTemplate;
     }
-
 }

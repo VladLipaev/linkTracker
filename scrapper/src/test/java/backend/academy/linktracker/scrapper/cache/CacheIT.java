@@ -36,8 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class CacheIT {
 
     @Container
-    public static GenericContainer<?> valkey = new GenericContainer<>("valkey/valkey:latest")
-        .withExposedPorts(6379);
+    public static GenericContainer<?> valkey = new GenericContainer<>("valkey/valkey:latest").withExposedPorts(6379);
 
     static {
         POSTGRES.start();
@@ -57,8 +56,8 @@ public class CacheIT {
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
-            "app.kafka.schema-registry",
-            () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
+                "app.kafka.schema-registry",
+                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
         registry.add("app.redis.time-to-live", () -> "2s");
     }
 
@@ -78,17 +77,17 @@ public class CacheIT {
 
     @Test
     void shouldCacheDataInValkeyInExpectedFormat() {
-        //given
+        // given
         Long chatId = 100L;
         String expectedKey = "links:byTgChat::100::all";
         tgChatRepository.save(new Chat(chatId));
-        scrapperLinksService.addLink(chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
+        scrapperLinksService.addLink(
+                chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
 
-
-        //when
+        // when
         ListLinksResponse response = scrapperLinksService.getLinks(chatId, null);
 
-        //then
+        // then
         Boolean hasKey = redisTemplate.hasKey(expectedKey);
         assertThat(hasKey).isTrue();
         ListLinksResponse cachedResponse = redisTemplate.opsForValue().get(expectedKey);
@@ -98,36 +97,38 @@ public class CacheIT {
 
     @Test
     void shouldInvalidateCacheOnAddLink() {
-        //given
+        // given
         Long chatId = 101L;
         String expectedKey = "links:byTgChat::101::all";
         tgChatRepository.save(new Chat(chatId));
-        scrapperLinksService.addLink(chatId, new AddLinkRequest("https://github.com/VladLipaev/finance-tracker", List.of()));
+        scrapperLinksService.addLink(
+                chatId, new AddLinkRequest("https://github.com/VladLipaev/finance-tracker", List.of()));
 
-        //when
+        // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
-        scrapperLinksService.addLink(chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
+        scrapperLinksService.addLink(
+                chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
 
-        //then
+        // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
     }
 
     @Test
     void shouldExpireCacheAfterTtl() {
-        //given
+        // given
         Long chatId = 102L;
         String expectedKey = "links:byTgChat::102::all";
         tgChatRepository.save(new Chat(chatId));
-        scrapperLinksService.addLink(chatId, new AddLinkRequest("https://github.com/VladLipaev/Faceofgeneration", List.of()));
+        scrapperLinksService.addLink(
+                chatId, new AddLinkRequest("https://github.com/VladLipaev/Faceofgeneration", List.of()));
 
-        //when
+        // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
 
-        //then
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() ->
-            assertThat(redisTemplate.hasKey(expectedKey)).isFalse()
-        );
+        // then
+        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertThat(redisTemplate.hasKey(expectedKey))
+                .isFalse());
     }
 }
