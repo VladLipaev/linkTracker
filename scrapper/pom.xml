@@ -43,6 +43,12 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.2.3</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
@@ -110,10 +116,10 @@
         <!-- </dependency> -->
 
         <!-- Redis: -->
-        <!-- <dependency> -->
-        <!--     <groupId>org.springframework.boot</groupId> -->
-        <!--     <artifactId>spring-boot-starter-data-redis</artifactId> -->
-        <!-- </dependency> -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
 
         <!-- Kafka: -->
         <dependency>

@@ -41,44 +41,40 @@ public class DefaultLinksService implements LinksService {
     private Integer BATCH_SIZE;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ListLinksResponse getAllLinks(Long chatId, String tag) {
         Chat chat = tgChatRepository
                 .findById(chatId)
                 .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
-        List<Link> links;
+
+        ListLinksResponse response;
 
         if (tag == null) {
-            links = chat.getLinks();
+            List<Link> links = chat.getLinks();
             if (links.isEmpty()) {
-                return new ListLinksResponse(List.of(), 0);
+                response = new ListLinksResponse(List.of(), 0);
+            } else {
+                List<LinkResponse> linkResponses = links.stream()
+                        .map(link -> new LinkResponse(link.getId(), link.getUrl(), List.of()))
+                        .toList();
+                response = new ListLinksResponse(linkResponses, linkResponses.size());
             }
-            List<LinkResponse> linkResponses = links.stream()
-                    .map(link -> new LinkResponse(link.getId(), link.getUrl(), List.of()))
+        } else {
+            List<Subscription> subscriptions = subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag);
+            List<LinkResponse> linkResponses = subscriptions.stream()
+                    .map(sub -> new LinkResponse(
+                            sub.getLink().getId(), sub.getLink().getUrl(), sub.getTags()))
                     .toList();
-            return new ListLinksResponse(linkResponses, linkResponses.size());
+            response = new ListLinksResponse(linkResponses, linkResponses.size());
         }
 
-        Pageable pageable = PageRequest.of(0, BATCH_SIZE);
-        Slice<Subscription> subscriptionSlice =
-                subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag, pageable);
-        List<Subscription> subscriptions = new ArrayList<>(subscriptionSlice.getContent());
-        while (subscriptionSlice.hasNext()) {
-            subscriptionSlice = subscriptionRepository.findSubscriptionsByChatIdAndTag(
-                    chatId, tag, subscriptionSlice.nextPageable());
-            subscriptions.addAll(subscriptionSlice.getContent());
-        }
-        List<LinkResponse> linkResponses = subscriptions.stream()
-                .map(sub ->
-                        new LinkResponse(sub.getLink().getId(), sub.getLink().getUrl(), sub.getTags()))
-                .toList();
-
-        return new ListLinksResponse(linkResponses, linkResponses.size());
+        return response;
     }
 
     @Override
     @Transactional
     public LinkResponse addLink(Long chatId, AddLinkRequest request) {
+
         Chat chat = tgChatRepository
                 .findById(chatId)
                 .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
@@ -116,6 +112,7 @@ public class DefaultLinksService implements LinksService {
     @Override
     @Transactional
     public LinkResponse removeLink(Long chatId, RemoveLinkRequest removeLinkRequest) {
+
         if (tgChatRepository.findById(chatId).isEmpty()) {
             throw new ChatNotFoundException("Чат не зарегистрирован");
         }

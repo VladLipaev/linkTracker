@@ -12,7 +12,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface JpaSubscriptionRepository extends JpaRepository<Subscription, SubscriptionId> {
 
-    // DISTINCT чтобы при join sub_tags не было дублей
     @Query("SELECT DISTINCT sub FROM Subscription sub join fetch sub.link l"
             + " join fetch sub.tags WHERE sub.chat.id = :chatId AND :tag MEMBER OF sub.tags")
     Slice<Subscription> findSubscriptionsByChatIdAndTag(

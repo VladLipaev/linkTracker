@@ -7,7 +7,8 @@ import backend.academy.linktracker.grpc.scrapper.LinkResponse;
 import backend.academy.linktracker.grpc.scrapper.ListLinksResponse;
 import backend.academy.linktracker.grpc.scrapper.RemoveLinkRequest;
 import backend.academy.linktracker.grpc.scrapper.ScrapperServiceGrpc;
-import backend.academy.linktracker.scrapper.service.LinksService;
+import backend.academy.linktracker.scrapper.service.CacheLinksUtil;
+import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
 import backend.academy.linktracker.scrapper.service.TgChatService;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
@@ -20,8 +21,9 @@ import org.springframework.stereotype.Controller;
 @ConditionalOnProperty(prefix = "app.communication.controller", name = "mode", havingValue = "grpc")
 public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceImplBase {
 
-    private final LinksService linksService;
+    private final ScrapperLinksService linksService;
     private final TgChatService tgChatService;
+    private final CacheLinksUtil cacheLinksUtil;
 
     @Override
     public void registerChat(ChatRequest request, StreamObserver<Empty> responseObserver) {
@@ -32,6 +34,7 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
 
     @Override
     public void deleteChat(ChatRequest request, StreamObserver<Empty> responseObserver) {
+        cacheLinksUtil.invalidateChatCache(request.getChatId());
         tgChatService.deleteTgChat(request.getChatId());
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
@@ -56,7 +59,7 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
     @Override
     public void getLinks(GetLinksRequest request, StreamObserver<ListLinksResponse> responseObserver) {
         String tag = request.hasTag() ? request.getTag() : null;
-        var result = linksService.getAllLinks(request.getChatId(), tag);
+        var result = linksService.getLinks(request.getChatId(), tag);
 
         ListLinksResponse.Builder responseBuilder =
                 ListLinksResponse.newBuilder().setSize(result.size());
