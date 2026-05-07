@@ -10,6 +10,7 @@ import backend.academy.linktracker.scrapper.config.KafkaConfiguration;
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
+import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
@@ -109,6 +110,24 @@ public class CacheIT {
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
         scrapperLinksService.addLink(
                 chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
+
+        // then
+        assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+    }
+
+    @Test
+    void shouldInvalidateCacheOnRemoveLink() {
+        // given
+        Long chatId = 103L;
+        String expectedKey = "links:byTgChat::103::all";
+        tgChatRepository.save(new Chat(chatId));
+        scrapperLinksService.addLink(
+                chatId, new AddLinkRequest("https://github.com/VladLipaev/finance-tracker", List.of()));
+
+        // when
+        scrapperLinksService.getLinks(chatId, null);
+        assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
+        scrapperLinksService.removeLink(chatId, new RemoveLinkRequest("https://github.com/VladLipaev/finance-tracker"));
 
         // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
