@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -120,3 +120,87 @@ services:
       - broker-2
       - broker-3
 
+  valkey-node-1:
+    image: valkey/valkey:latest
+    container_name: valkey-node-1
+    ports:
+      - "7001:7001"
+    command: [ "valkey-server", "--port", "7001", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-1:/data
+
+  valkey-node-2:
+    image: valkey/valkey:latest
+    container_name: valkey-node-2
+    ports:
+      - "7002:7002"
+    command: [ "valkey-server", "--port", "7002", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-2:/data
+
+  valkey-node-3:
+    image: valkey/valkey:latest
+    container_name: valkey-node-3
+    ports:
+      - "7003:7003"
+    command: [ "valkey-server", "--port", "7003", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-3:/data
+
+  valkey-node-4:
+    image: valkey/valkey:latest
+    container_name: valkey-node-4
+    ports:
+      - "7004:7004"
+    command: [ "valkey-server", "--port", "7004", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-4:/data
+
+  valkey-node-5:
+    image: valkey/valkey:latest
+    container_name: valkey-node-5
+    ports:
+      - "7005:7005"
+    command: [ "valkey-server", "--port", "7005", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-5:/data
+
+  valkey-node-6:
+    image: valkey/valkey:latest
+    container_name: valkey-node-6
+    ports:
+      - "7006:7006"
+    command: [ "valkey-server", "--port", "7006", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes" ]
+    volumes:
+      - valkey-data-6:/data
+
+    
+
+  valkey-cluster-init:
+    image: valkey/valkey:latest
+    container_name: valkey-cluster-init
+    depends_on:
+      - valkey-node-1
+      - valkey-node-2
+      - valkey-node-3
+      - valkey-node-4
+      - valkey-node-5
+      - valkey-node-6
+    command: >
+      sh -c "echo 'Ждем 10 секунд для запуска всех нод...' && sleep 10 &&
+      echo 'Инициализация кластера...' &&
+      valkey-cli --cluster create
+      $$(getent hosts valkey-node-1 | awk '{ print $$1 }'):7001
+      $$(getent hosts valkey-node-2 | awk '{ print $$1 }'):7002
+      $$(getent hosts valkey-node-3 | awk '{ print $$1 }'):7003
+      $$(getent hosts valkey-node-4 | awk '{ print $$1 }'):7004
+      $$(getent hosts valkey-node-5 | awk '{ print $$1 }'):7005
+      $$(getent hosts valkey-node-6 | awk '{ print $$1 }'):7006
+      --cluster-replicas 1 --cluster-yes || echo 'Кластер уже инициализирован!'"
+volumes:
+  valkey-data-1:
+  valkey-data-2:
+  valkey-data-3:
+  valkey-data-4:
+  valkey-data-5:
+  valkey-data-6:

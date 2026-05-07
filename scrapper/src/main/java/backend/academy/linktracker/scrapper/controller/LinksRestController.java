@@ -4,7 +4,7 @@ import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
-import backend.academy.linktracker.scrapper.service.LinksService;
+import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,12 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
         matchIfMissing = true)
 public class LinksRestController {
 
-    private final LinksService linksService;
+    private final ScrapperLinksService linksService;
 
     @GetMapping
     public ResponseEntity<ListLinksResponse> getAllLinks(
             @RequestHeader("Tg-Chat-Id") Long chatId, @RequestParam(value = "tag", required = false) String tag) {
-        return ResponseEntity.ok().body(linksService.getAllLinks(chatId, tag));
+        return ResponseEntity.ok().body(linksService.getLinks(chatId, tag));
     }
 
     @PostMapping
