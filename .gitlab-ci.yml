@@ -1,3 +1,15 @@
+image: "${GITLAB_DOCKER_PROXY}/eclipse-temurin:25-jdk-alpine"
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Xmx4g -XX:+UseG1GC -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:CICompilerCount=2"
+  GITLAB_DOCKER_PROXY: "gitlab.education.tbank.ru:443/backend-academy-java-2025/lecture-materials/dependency_proxy/containers"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_REF_PROTECTED == 'true'
+    - if: $CI_COMMIT_BRANCH == 'master'
+
 cache:
   key: "maven-cache-$CI_PROJECT_ID"
   paths:
