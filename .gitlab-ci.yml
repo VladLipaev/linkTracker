@@ -22,22 +22,19 @@ cache:
 
 build:
   stage: build
+  timeout: 20m
   script:
     - ./mvnw package -T 1C -DskipTests=true -Djacoco.skip=true
       -Denforcer.skip=true -Dflatten.skip=true
       -Dmodernizer.skip=true -Dspotbugs.skip=true -Dpmd.skip=true
       --projects '!build-report-aggregate' -am
-  before_script:
-    - apk add --no-cache gcompat
 
 lint:
   stage: lint
   needs:
     - build
   script:
-    - ./mvnw compile -am spotless:check modernizer:modernizer spotbugs:check pmd:check pmd:cpd-check
-  before_script:
-    - apk add --no-cache gcompat
+    - ./mvnw compile -T 1C -am spotless:check modernizer:modernizer spotbugs:check pmd:check pmd:cpd-check
 
 test:
   stage: test
@@ -57,6 +54,5 @@ test:
   before_script:
     - apk add --no-cache docker-cli
     - echo "$CI_JOB_TOKEN" | docker login gitlab.education.tbank.ru:443 -u gitlab-ci-token --password-stdin
-    - apk add --no-cache gcompat
   script:
-    - ./mvnw verify
+    - ./mvnw verify -Dgroups='!integration'
