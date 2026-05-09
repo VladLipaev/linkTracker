@@ -28,6 +28,8 @@ build:
       -Denforcer.skip=true -Dflatten.skip=true
       -Dmodernizer.skip=true -Dspotbugs.skip=true -Dpmd.skip=true
       --projects '!build-report-aggregate' -am
+  before_script:
+    - apk add --no-cache gcompat
 
 lint:
   stage: lint
@@ -35,6 +37,9 @@ lint:
     - build
   script:
     - ./mvnw compile -T 1C -am spotless:check modernizer:modernizer spotbugs:check pmd:check pmd:cpd-check
+
+  before_script:
+    - apk add --no-cache gcompat
 
 test:
   stage: test
