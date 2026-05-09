@@ -5,6 +5,8 @@ import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
@@ -39,4 +41,12 @@ public class TestBeans {
 
         return liquibase;
     }
+
+    @Bean
+    public LettuceConnectionFactory redisConnectionFactory() {
+        return new LettuceConnectionFactory(VALKEY.getHost(), VALKEY.getFirstMappedPort());
+    }
+
+    public static final GenericContainer<?> VALKEY =
+            new GenericContainer<>("valkey/valkey:latest").withExposedPorts(6379);
 }

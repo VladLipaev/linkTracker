@@ -3,6 +3,7 @@ package backend.academy.linktracker.scrapper.cache;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
+import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
@@ -20,37 +21,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @Testcontainers
-@Import({TestBeans.class, KafkaConfiguration.class, CacheIT.TestRedisConfig.class})
+@Import({TestBeans.class, KafkaConfiguration.class})
 public class CacheIT {
-
-    @Container
-    public static GenericContainer<?> valkey = new GenericContainer<>("valkey/valkey:latest").withExposedPorts(6379);
-
     static {
         POSTGRES.start();
         KAFKA_CONTAINER.start();
         SCHEMA_REGISTRY.start();
-    }
-
-    @TestConfiguration
-    static class TestRedisConfig {
-        @Bean
-        public LettuceConnectionFactory redisConnectionFactory() {
-            return new LettuceConnectionFactory(valkey.getHost(), valkey.getFirstMappedPort());
-        }
+        VALKEY.start();
     }
 
     @DynamicPropertySource

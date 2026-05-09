@@ -3,6 +3,7 @@ package backend.academy.linktracker.scrapper.e2e;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
+import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -42,6 +43,7 @@ public class ScrapperToBotE2ETest {
         POSTGRES.start();
         KAFKA_CONTAINER.start();
         SCHEMA_REGISTRY.start();
+        VALKEY.start();
     }
 
     @DynamicPropertySource
