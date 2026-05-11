@@ -15,6 +15,7 @@ import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
+import com.github.benmanes.caffeine.cache.Cache;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,9 @@ public class CacheIT {
     @Autowired
     private RedisTemplate<String, ListLinksResponse> redisTemplate;
 
+    @Autowired
+    private Cache<String, ListLinksResponse> localCache;
+
     @BeforeEach
     void setUp() {
         redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
@@ -76,9 +80,12 @@ public class CacheIT {
         // then
         Boolean hasKey = redisTemplate.hasKey(expectedKey);
         assertThat(hasKey).isTrue();
-        ListLinksResponse cachedResponse = redisTemplate.opsForValue().get(expectedKey);
-        assertThat(cachedResponse).isNotNull();
-        assertThat(cachedResponse.size()).isEqualTo(response.size());
+        ListLinksResponse cachedResponseValkey = redisTemplate.opsForValue().get(expectedKey);
+        ListLinksResponse cachedResponseLocal = localCache.getIfPresent(expectedKey);
+        assertThat(cachedResponseLocal).isNotNull();
+        assertThat(cachedResponseValkey).isNotNull();
+        assertThat(cachedResponseValkey.size()).isEqualTo(response.size());
+        assertThat(cachedResponseLocal.size()).isEqualTo(response.size());
     }
 
     @Test
@@ -89,15 +96,16 @@ public class CacheIT {
         tgChatRepository.save(new Chat(chatId));
         scrapperLinksService.addLink(
                 chatId, new AddLinkRequest("https://github.com/VladLipaev/finance-tracker", List.of()));
-
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         scrapperLinksService.addLink(
                 chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
 
         // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+        assertThat(localCache.getIfPresent(expectedKey)).isNull();
     }
 
     @Test
@@ -112,10 +120,12 @@ public class CacheIT {
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         scrapperLinksService.removeLink(chatId, new RemoveLinkRequest("https://github.com/VladLipaev/finance-tracker"));
 
         // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+        assertThat(localCache.getIfPresent(expectedKey)).isNull();
     }
 
     @Test
@@ -130,9 +140,11 @@ public class CacheIT {
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
-
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         // then
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertThat(redisTemplate.hasKey(expectedKey))
-                .isFalse());
+        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+            assertThat(localCache.getIfPresent(expectedKey)).isNull();
+        });
     }
 }
