@@ -2,6 +2,6 @@ package backend.academy.linktracker.scrapper.client.bot;
 
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 
-public interface TelegramBotRestClient {
+public interface TelegramBotClient {
     void sendUpdate(LinkUpdate linkUpdate);
 }

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "app.communication", name = "mode", havingValue = "grpc")
+@ConditionalOnProperty(prefix = "app.communication.controller", name = "mode", havingValue = "grpc")
 public class BotGrpcController extends BotUpdateServiceGrpc.BotUpdateServiceImplBase {
 
     private final TelegramUpdateService telegramUpdateService;

@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.handler.UpdateResult;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
-import backend.academy.linktracker.scrapper.service.HttpNotificationUpdateSender;
 import backend.academy.linktracker.scrapper.service.LinkProcessorService;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -42,21 +41,15 @@ class LinkUpdaterSchedulerTest {
     @Mock
     private SchedulerProperties properties;
 
-    @Mock
-    private HttpNotificationUpdateSender httpNotificationUpdateSender;
-
-    @Mock
-    private SchedulerProperties schedulerProperties;
-
     private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
     public void setUp() {
         when(properties.threadCount()).thenReturn(2);
         when(properties.batchSize()).thenReturn(10);
+        when(properties.maxPages()).thenReturn(100);
 
-        linkUpdaterScheduler = new LinkUpdaterScheduler(
-                linksRepository, processorService, properties, httpNotificationUpdateSender, schedulerProperties);
+        linkUpdaterScheduler = new LinkUpdaterScheduler(linksRepository, processorService, properties);
 
         linkUpdaterScheduler.init();
     }

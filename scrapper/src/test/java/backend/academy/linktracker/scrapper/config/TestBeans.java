@@ -36,6 +36,7 @@ public class TestBeans {
         SpringLiquibase liquibase = new SpringLiquibase();
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog("classpath:migrations/db.changelog-master.xml");
+
         return liquibase;
     }
 }

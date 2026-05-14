@@ -1,10 +1,14 @@
 package backend.academy.linktracker.scrapper.schedule;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import backend.academy.linktracker.scrapper.client.bot.TelegramBotRestClient;
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.entity.Chat;
@@ -13,6 +17,9 @@ import backend.academy.linktracker.scrapper.entity.Subscription;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.repository.SubscriptionRepository;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
+import backend.academy.linktracker.scrapper.service.NotificationUpdateSender;
+import backend.academy.linktracker.scrapper.service.SyncNotificationUpdateSender;
+import backend.academy.linktracker.scrapper.service.kafka.KafkaNotificationUpdateSender;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -22,6 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -33,7 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(TestBeans.class)
 @Testcontainers
 @WireMockTest(httpPort = 54321)
-public class LinkUpdaterSchedulerIT {
+public abstract class BaseLinkUpdaterSchedulerIT {
 
     @Autowired
     private LinkUpdaterScheduler scheduler;
@@ -48,7 +56,10 @@ public class LinkUpdaterSchedulerIT {
     private SubscriptionRepository subscriptionRepository;
 
     @MockitoBean
-    private TelegramBotRestClient botClient; // Мокаем бота, чтобы проверять, что ему отправляется
+    private NotificationUpdateSender notificationUpdateSender; // Мокаем бота, чтобы проверять, что ему отправляется
+
+    @Value("${app.communication.client.mode}")
+    private String clientMode;
 
     private Chat testChat;
 
@@ -71,6 +82,17 @@ public class LinkUpdaterSchedulerIT {
     }
 
     @Test
+    void shouldUseClientModeFromConfig() {
+        if (clientMode.equals("kafka")) {
+            assertThat(notificationUpdateSender instanceof KafkaNotificationUpdateSender);
+        } else if (clientMode.equals("rest") || clientMode.equals("grpc")) {
+            assertThat(notificationUpdateSender instanceof SyncNotificationUpdateSender);
+        } else {
+            assertThat(notificationUpdateSender instanceof KafkaNotificationUpdateSender);
+        }
+    }
+
+    @Test
     @DisplayName("Mock GitHub API возвращает новый Issue -> Scrapper формирует сообщение")
     void shouldFormMessageWithTitleAuthorPreview_ForNewGithubIssue() {
         // Arrange
@@ -84,8 +106,8 @@ public class LinkUpdaterSchedulerIT {
                   {
                     "title": "Упал прод",
                     "user": {"login": "crazy_hacker"},
-                    "created_at": "2026-04-07T10:00:00Z",
-                    "updated_at": "2026-04-07T10:00:00Z",
+                    "created_at": "2030-04-07T10:00:00Z",
+                    "updated_at": "2030-04-07T10:00:00Z",
                     "body": "Все сломалось, чините быстрее"
                   }
                 ]
@@ -96,7 +118,7 @@ public class LinkUpdaterSchedulerIT {
 
         // Assert
         ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationUpdateSender).sendUpdate(captor.capture());
 
         String message = captor.getValue().description();
         assertThat(message)
@@ -119,8 +141,8 @@ public class LinkUpdaterSchedulerIT {
                   {
                     "title": "Длинный баг",
                     "user": {"login": "user1"},
-                    "created_at": "2026-04-07T10:00:00Z",
-                    "updated_at": "2026-04-07T10:00:00Z",
+                    "created_at": "2030-04-07T10:00:00Z",
+                    "updated_at": "2030-04-07T10:00:00Z",
                     "body": "%s"
                   }
                 ]
@@ -129,7 +151,7 @@ public class LinkUpdaterSchedulerIT {
         scheduler.update();
 
         ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationUpdateSender).sendUpdate(captor.capture());
 
         String preview = captor.getValue().description();
         String expectedPreview = "A".repeat(200) + "...";
@@ -167,7 +189,7 @@ public class LinkUpdaterSchedulerIT {
         scheduler.update();
 
         ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
-        verify(botClient).sendUpdate(captor.capture());
+        verify(notificationUpdateSender).sendUpdate(captor.capture());
 
         String message = captor.getValue().description();
         assertThat(message)
@@ -196,7 +218,7 @@ public class LinkUpdaterSchedulerIT {
                 get(urlPathMatching("/repos/user/ok-1/issues"))
                         .willReturn(
                                 okJson(
-                                        "[{\"title\": \"OK 1\", \"user\": {\"login\": \"a\"}, \"created_at\": \"2026-04-07T10:00:00Z\", \"updated_at\": \"2026-04-07T10:00:00Z\"}]")));
+                                        "[{\"title\": \"OK 1\", \"user\": {\"login\": \"a\"}, \"created_at\": \"2030-04-07T10:00:00Z\", \"updated_at\": \"2030-04-07T10:00:00Z\"}]")));
 
         // Вторая ссылка падает с 500 ошибкой
         stubFor(get(urlPathMatching("/repos/user/fail/issues")).willReturn(serverError()));
@@ -206,7 +228,7 @@ public class LinkUpdaterSchedulerIT {
                 get(urlPathMatching("/repos/user/ok-2/issues"))
                         .willReturn(
                                 okJson(
-                                        "[{\"title\": \"OK 2\", \"user\": {\"login\": \"b\"}, \"created_at\": \"2026-04-07T10:00:00Z\", \"updated_at\": \"2026-04-07T10:00:00Z\"}]")));
+                                        "[{\"title\": \"OK 2\", \"user\": {\"login\": \"b\"}, \"created_at\": \"2030-04-07T10:00:00Z\", \"updated_at\": \"2030-04-07T10:00:00Z\"}]")));
 
         // Act
         scheduler.update();
@@ -214,7 +236,7 @@ public class LinkUpdaterSchedulerIT {
         // Assert
         ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
         // Проверяем, что бот получил ровно 3 сообщения (2 успешных и 1 ошибочный)
-        verify(botClient, times(3)).sendUpdate(captor.capture());
+        verify(notificationUpdateSender, times(3)).sendUpdate(captor.capture());
 
         List<String> messages =
                 captor.getAllValues().stream().map(LinkUpdate::description).toList();

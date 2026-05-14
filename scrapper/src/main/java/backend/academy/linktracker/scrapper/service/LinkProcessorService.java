@@ -18,8 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -29,6 +28,7 @@ public class LinkProcessorService {
     private final List<LinkHandler> linkHandlers;
     private final LinksRepository linksRepository;
     private final NotificationUpdateSender updateSender;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${app.client.batch-size}")
     private Integer BATCH_SIZE;
@@ -78,17 +78,19 @@ public class LinkProcessorService {
 
     private void sendErrorNotification(Link link, String errorMessage) {
         try {
-            Pageable pageable = PageRequest.of(0, BATCH_SIZE);
-            Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), pageable);
-            if (chatSlice.hasContent()) {
-                updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
-            }
-            while (chatSlice.hasNext()) {
-                chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), chatSlice.nextPageable());
-                updateSender.sendUpdate(
-                        new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
-            }
+            transactionTemplate.executeWithoutResult(status -> {
+                Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+                Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), pageable);
+                if (chatSlice.hasContent()) {
+                    updateSender.sendUpdate(
+                            new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
+                }
+                while (chatSlice.hasNext()) {
+                    chatSlice = linksRepository.findAllChatIdsByUrl(link.getUrl(), chatSlice.nextPageable());
+                    updateSender.sendUpdate(
+                            new LinkUpdate(link.getId(), link.getUrl(), errorMessage, chatSlice.getContent()));
+                }
+            });
         } catch (Exception ex) {
             log.atError()
                     .setMessage("Не удалось отправить уведомление об ошибке")
@@ -111,32 +113,16 @@ public class LinkProcessorService {
             Slice<Long> chatSlice = linksRepository.findAllChatIdsByUrl(url, pageable);
 
             if (chatSlice.hasContent()) {
-                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
 
             while (chatSlice.hasNext()) {
                 chatSlice = linksRepository.findAllChatIdsByUrl(url, chatSlice.nextPageable());
-                scheduleUpdate(new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
+                updateSender.sendUpdate(
+                        new LinkUpdate(link.getId(), url, result.description(), chatSlice.getContent()));
             }
-
-            log.atInfo()
-                    .setMessage("Уведомления добавлены в очередь после коммита")
-                    .addKeyValue("url", url)
-                    .log();
         }
-    }
-
-    private void scheduleUpdate(LinkUpdate update) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                log.atInfo()
-                        .setMessage("У ссылки новое обновление!")
-                        .addKeyValue("url", update.url())
-                        .log();
-                updateSender.sendUpdate(update);
-            }
-        });
     }
 
     @Transactional

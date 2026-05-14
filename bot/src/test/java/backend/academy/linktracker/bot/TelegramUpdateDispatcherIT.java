@@ -7,8 +7,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import backend.academy.linktracker.bot.client.scrapper.RestClientScrapperRestClient;
+import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.configuration.TelegramBotStart;
+import backend.academy.linktracker.bot.controller.kafka.repository.IdempotencyRepository;
 import backend.academy.linktracker.bot.handler.TelegramUpdateDispatcher;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.BotCommand;
@@ -24,6 +25,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.ComponentScan;
@@ -35,10 +40,19 @@ class TelegramUpdateDispatcherIT {
     @TestConfiguration
     @ComponentScan(
             basePackages = {"backend.academy.linktracker.bot.handler", "backend.academy.linktracker.bot.configuration"})
+    @EnableAutoConfiguration(
+            exclude = {
+                DataSourceAutoConfiguration.class,
+                DataSourceTransactionManagerAutoConfiguration.class,
+                HibernateJpaAutoConfiguration.class
+            })
     static class TestConfig {}
 
     @Autowired
     private TelegramUpdateDispatcher telegramUpdateDispatcher;
+
+    @MockitoBean
+    private IdempotencyRepository idempotencyRepository;
 
     @MockitoBean
     private TelegramBot telegramBot;
@@ -47,7 +61,7 @@ class TelegramUpdateDispatcherIT {
     private TelegramBotStart telegramBotStart;
 
     @MockitoBean
-    private RestClientScrapperRestClient restClient;
+    private ScrapperClient restClient;
 
     @BeforeEach
     public void setTelegramUpdateDispatcher() {
