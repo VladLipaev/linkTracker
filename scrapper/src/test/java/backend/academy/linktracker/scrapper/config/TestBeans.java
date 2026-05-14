@@ -1,5 +1,8 @@
 package backend.academy.linktracker.scrapper.config;
 
+import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
+import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
+
 import javax.sql.DataSource;
 import liquibase.integration.spring.SpringLiquibase;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -49,4 +52,11 @@ public class TestBeans {
 
     public static final GenericContainer<?> VALKEY =
             new GenericContainer<>("valkey/valkey:latest").withExposedPorts(6379);
+
+    static {
+        POSTGRES.start();
+        KAFKA_CONTAINER.start();
+        SCHEMA_REGISTRY.start();
+        VALKEY.start();
+    }
 }

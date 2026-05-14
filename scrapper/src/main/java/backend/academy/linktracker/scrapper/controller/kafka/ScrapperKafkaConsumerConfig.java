@@ -1,6 +1,5 @@
-package backend.academy.linktracker.bot.controller.kafka;
+package backend.academy.linktracker.scrapper.controller.kafka;
 
-import backend.academy.linktracker.bot.controller.kafka.exception.RetryableException;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -13,6 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +24,7 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
@@ -33,24 +34,24 @@ import org.springframework.util.backoff.FixedBackOff;
 @EnableKafka
 @Slf4j
 @RequiredArgsConstructor
-public class KafkaConsumerConfig {
+public class ScrapperKafkaConsumerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${app.kafka.retry.attempts}")
+    @Value("${app.kafka.consumers.retry.attempts}")
     private Integer attempts;
 
-    @Value("${app.kafka.retry.interval}")
+    @Value("${app.kafka.consumers.retry.interval}")
     private Integer interval;
 
-    @Value("${app.kafka.concurrency}")
+    @Value("${app.kafka.consumers.concurrency}")
     private Integer concurrency;
 
     @Value("${app.kafka.schema-registry}")
     private String schemaRegistry;
 
-    @Value("${app.kafka.consumer.group-id}")
+    @Value("${app.kafka.consumers.group-id}")
     private String groupId;
 
     @Bean
@@ -69,28 +70,30 @@ public class KafkaConsumerConfig {
 
     @Bean
     public KafkaListenerContainerFactory<?> kafkaListenerContainerFactory(
-            ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, Object> botDlqKafkaTemplate) {
+            ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, Object> scrapperDlqKafkaTemplate) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         FixedBackOff fixedBackOff = new FixedBackOff(interval, attempts);
         DefaultErrorHandler errorHandler =
-                new DefaultErrorHandler(new DeadLetterPublishingRecoverer(botDlqKafkaTemplate), fixedBackOff);
-        // все исключения которые мы не будем обрабатывать сами для повторной отправки просто сразу отправляем в DLT
+                new DefaultErrorHandler(new DeadLetterPublishingRecoverer(scrapperDlqKafkaTemplate), fixedBackOff);
         errorHandler.addNotRetryableExceptions(Exception.class);
         errorHandler.addRetryableExceptions(RetryableException.class);
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(errorHandler);
         factory.setConcurrency(concurrency);
+
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
         return factory;
     }
 
     @Bean
-    public KafkaTemplate<String, Object> botDlqKafkaTemplate(ProducerFactory<String, Object> producerFactory) {
-        return new KafkaTemplate<>(producerFactory);
+    public KafkaTemplate<String, Object> scrapperDlqKafkaTemplate(
+            @Qualifier("scrapperDlqProducerFactory") ProducerFactory<String, Object> scrapperDlqProducerFactory) {
+        return new KafkaTemplate<>(scrapperDlqProducerFactory);
     }
 
     @Bean
-    public ProducerFactory<String, Object> botDlqProducerFactory() {
+    public ProducerFactory<String, Object> scrapperDlqProducerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);

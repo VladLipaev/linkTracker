@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.client;
 
 import backend.academy.linktracker.scrapper.handler.dto.GitHubIssueResponse;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class GitHubClient {
 
     private final RestClient restClient;
 
+    @Retry(name = "external")
     public List<GitHubIssueResponse> fetchRepo(String owner, String repo, OffsetDateTime since, int page, int perPage)
             throws GitHubClientException {
         try {

@@ -76,5 +76,7 @@
     <Match>
         <Package name="~backend\.academy\.linktracker\.scrapper\.dto\.avro.*"/>
     </Match>
-
+    <Match>
+        <Package name="~backend\.academy\.linktracker\.bot\.dto\.avro.*"/>
+    </Match>
 </FindBugsFilter>
