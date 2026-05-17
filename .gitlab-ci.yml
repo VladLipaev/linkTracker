@@ -65,4 +65,5 @@ test:
     - echo "$CI_JOB_TOKEN" | docker login gitlab.education.tbank.ru:443 -u gitlab-ci-token --password-stdin
     - apk add --no-cache gcompat
   script:
+
     - ./mvnw verify -Dgroups='!integration'
