@@ -107,7 +107,13 @@ resilience4j:
           - org.springframework.web.client.ResourceAccessException
           - org.springframework.web.client.HttpClientErrorException.TooManyRequests
         ignoreExceptions:
-          - org.springframework.web.client.HttpClientErrorException
+          - org.springframework.web.client.HttpClientErrorException.BadRequest
+          - org.springframework.web.client.HttpClientErrorException.Unauthorized
+          - org.springframework.web.client.HttpClientErrorException.Forbidden
+          - org.springframework.web.client.HttpClientErrorException.NotFound
+          - org.springframework.web.client.HttpClientErrorException.Conflict
+          - backend.academy.linktracker.scrapper.client.bot.BotClientException
+    circuit-breaker-aspect-order: 398
 
   retry:
     instances:
@@ -121,6 +127,8 @@ resilience4j:
         ignore-exceptions:
           - org.springframework.web.client.HttpClientErrorException
           - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.scrapper.client.bot.BotClientException
       external:
         max-attempts: 5
         wait-duration: 3s
@@ -130,6 +138,7 @@ resilience4j:
           - org.springframework.web.client.HttpServerErrorException
         ignore-exceptions:
           - org.springframework.web.client.HttpClientErrorException
+    retry-aspect-order: 399
 
   ratelimiter:
     instances:
@@ -141,6 +150,7 @@ resilience4j:
         limit-for-period: 100
         limit-refresh-period: 1s
         timeout-duration: 5s
+    rate-limiter-aspect-order: 397
 logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"

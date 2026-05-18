@@ -52,6 +52,11 @@ public class RestClientTelegramBotClient implements TelegramBotClient {
 
     @Transactional
     public void fallbackSendUpdateKafka(LinkUpdate linkUpdate, Throwable t) {
+
+        if (t instanceof BotClientException botClientException) {
+            throw botClientException;
+        }
+
         log.atError()
                 .setMessage("ошибка при отправке сообщения по rest, включается альтернативная кафка")
                 .addKeyValue("error.message", t.getMessage())
