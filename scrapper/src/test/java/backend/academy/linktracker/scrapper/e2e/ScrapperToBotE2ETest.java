@@ -3,6 +3,7 @@ package backend.academy.linktracker.scrapper.e2e;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
+import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -13,7 +14,7 @@ import backend.academy.linktracker.scrapper.ScrapperApplication;
 import backend.academy.linktracker.scrapper.config.KafkaConfiguration;
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
-import backend.academy.linktracker.scrapper.service.NotificationUpdateSender;
+import backend.academy.linktracker.scrapper.service.SyncNotificationUpdateSender;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
@@ -21,11 +22,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -42,6 +46,7 @@ public class ScrapperToBotE2ETest {
         POSTGRES.start();
         KAFKA_CONTAINER.start();
         SCHEMA_REGISTRY.start();
+        VALKEY.start();
     }
 
     @DynamicPropertySource
@@ -53,7 +58,7 @@ public class ScrapperToBotE2ETest {
     }
 
     @Autowired
-    NotificationUpdateSender notificationUpdateSender;
+    SyncNotificationUpdateSender notificationUpdateSender;
 
     @MockitoBean
     ScrapperClient scrapperClient;
@@ -73,6 +78,19 @@ public class ScrapperToBotE2ETest {
             Mockito.when(mockBot.execute(Mockito.any())).thenReturn(dummyResponse);
 
             return mockBot;
+        }
+
+        @Bean
+        @Primary
+        public ProducerFactory<String, Object> primaryProducerFactory(
+                @Qualifier("scrapperDlqProducerFactory") ProducerFactory<String, Object> producerFactory) {
+            return producerFactory;
+        }
+
+        @Bean
+        @Primary
+        public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
+            return new KafkaTemplate<>(producerFactory);
         }
     }
 

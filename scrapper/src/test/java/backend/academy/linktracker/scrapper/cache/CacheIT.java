@@ -3,6 +3,7 @@ package backend.academy.linktracker.scrapper.cache;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
+import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
@@ -14,43 +15,28 @@ import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
+import com.github.benmanes.caffeine.cache.Cache;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @Testcontainers
-@Import({TestBeans.class, KafkaConfiguration.class, CacheIT.TestRedisConfig.class})
+@Import({TestBeans.class, KafkaConfiguration.class})
 public class CacheIT {
-
-    @Container
-    public static GenericContainer<?> valkey = new GenericContainer<>("valkey/valkey:latest").withExposedPorts(6379);
-
     static {
         POSTGRES.start();
         KAFKA_CONTAINER.start();
         SCHEMA_REGISTRY.start();
-    }
-
-    @TestConfiguration
-    static class TestRedisConfig {
-        @Bean
-        public LettuceConnectionFactory redisConnectionFactory() {
-            return new LettuceConnectionFactory(valkey.getHost(), valkey.getFirstMappedPort());
-        }
+        VALKEY.start();
     }
 
     @DynamicPropertySource
@@ -70,6 +56,9 @@ public class CacheIT {
 
     @Autowired
     private RedisTemplate<String, ListLinksResponse> redisTemplate;
+
+    @Autowired
+    private Cache<String, ListLinksResponse> localCache;
 
     @BeforeEach
     void setUp() {
@@ -91,9 +80,12 @@ public class CacheIT {
         // then
         Boolean hasKey = redisTemplate.hasKey(expectedKey);
         assertThat(hasKey).isTrue();
-        ListLinksResponse cachedResponse = redisTemplate.opsForValue().get(expectedKey);
-        assertThat(cachedResponse).isNotNull();
-        assertThat(cachedResponse.size()).isEqualTo(response.size());
+        ListLinksResponse cachedResponseValkey = redisTemplate.opsForValue().get(expectedKey);
+        ListLinksResponse cachedResponseLocal = localCache.getIfPresent(expectedKey);
+        assertThat(cachedResponseLocal).isNotNull();
+        assertThat(cachedResponseValkey).isNotNull();
+        assertThat(cachedResponseValkey.size()).isEqualTo(response.size());
+        assertThat(cachedResponseLocal.size()).isEqualTo(response.size());
     }
 
     @Test
@@ -104,15 +96,16 @@ public class CacheIT {
         tgChatRepository.save(new Chat(chatId));
         scrapperLinksService.addLink(
                 chatId, new AddLinkRequest("https://github.com/VladLipaev/finance-tracker", List.of()));
-
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         scrapperLinksService.addLink(
                 chatId, new AddLinkRequest("https://github.com/VladLipaev/linkTracker", List.of()));
 
         // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+        assertThat(localCache.getIfPresent(expectedKey)).isNull();
     }
 
     @Test
@@ -127,10 +120,12 @@ public class CacheIT {
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         scrapperLinksService.removeLink(chatId, new RemoveLinkRequest("https://github.com/VladLipaev/finance-tracker"));
 
         // then
         assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+        assertThat(localCache.getIfPresent(expectedKey)).isNull();
     }
 
     @Test
@@ -145,9 +140,11 @@ public class CacheIT {
         // when
         scrapperLinksService.getLinks(chatId, null);
         assertThat(redisTemplate.hasKey(expectedKey)).isTrue();
-
+        assertThat(localCache.getIfPresent(expectedKey)).isNotNull();
         // then
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertThat(redisTemplate.hasKey(expectedKey))
-                .isFalse());
+        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertThat(redisTemplate.hasKey(expectedKey)).isFalse();
+            assertThat(localCache.getIfPresent(expectedKey)).isNull();
+        });
     }
 }

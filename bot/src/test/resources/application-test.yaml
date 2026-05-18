@@ -4,3 +4,6 @@ app:
     token: test-token
     update-listener-sleep: 1s
     debug: true
+  communication:
+    client:
+      mode: rest

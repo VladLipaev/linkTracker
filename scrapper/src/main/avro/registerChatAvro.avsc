@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "RegisterChatAvro",
+  "namespace": "backend.academy.linktracker.bot.dto.avro",
+  "fields": [
+    {"name": "chatId", "type": "long"}
+  ]
+}

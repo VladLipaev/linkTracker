@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Controller;
@@ -22,11 +21,6 @@ import org.springframework.web.client.ResourceAccessException;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(
-        prefix = "app.communication.controller",
-        name = "mode",
-        havingValue = "kafka",
-        matchIfMissing = true)
 public class Consumer {
 
     private final TelegramUpdateService telegramUpdateService;

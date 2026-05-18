@@ -1,10 +1,10 @@
-package backend.academy.linktracker.scrapper.service.kafka;
+package backend.academy.linktracker.bot.controller.kafka;
 
-import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +15,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 
 @Configuration
-public class KafkaTemplateConfiguration {
+@RequiredArgsConstructor
+public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -24,7 +25,7 @@ public class KafkaTemplateConfiguration {
     private String schemaRegistry;
 
     @Bean
-    public ProducerFactory<String, LinkUpdateAvro> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> prodConf = new HashMap<>();
         prodConf.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         prodConf.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -42,7 +43,7 @@ public class KafkaTemplateConfiguration {
     }
 
     @Bean
-    public KafkaTemplate<String, LinkUpdateAvro> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }

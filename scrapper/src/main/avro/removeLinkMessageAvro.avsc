@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "RemoveLinkMessageAvro",
+  "namespace": "backend.academy.linktracker.bot.dto.avro",
+  "fields": [
+    {"name": "chatId", "type": "long"},
+    {"name": "url", "type": "string"}
+  ]
+}

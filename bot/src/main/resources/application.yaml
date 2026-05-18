@@ -27,9 +27,16 @@ app:
     uri: http://localhost:8081
   communication:
     client:
-      mode: grpc # rest
+      mode: rest # rest
+      connect-timeout: 5s
+      read-timeout: 10s
+      kafka-fallback:
+        topic:
+          chat-reg: chat-registration-topic
+          link-add: link-add-topic
+          link-remove: link-remove-topic
     controller:
-      mode: kafka #grpc, rest
+      mode: rest #grpc, rest
   kafka:
     retry:
       attempts: 3
@@ -49,3 +56,51 @@ logging:
     org:
       springframework:
         kafka: DEBUG
+resilience4j:
+  circuitbreaker:
+    instances:
+      scrapper:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 1s
+        max-wait-duration-in-half-open-state: 1s
+        record-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpClientErrorException.TooManyRequests
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException.BadRequest
+          - org.springframework.web.client.HttpClientErrorException.Unauthorized
+          - org.springframework.web.client.HttpClientErrorException.Forbidden
+          - org.springframework.web.client.HttpClientErrorException.NotFound
+          - org.springframework.web.client.HttpClientErrorException.Conflict
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+    circuit-breaker-aspect-order: 398
+  retry:
+    instances:
+      scrapper:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: false
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+    retry-aspect-order: 399
+  ratelimiter:
+    instances:
+      scrapper:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+    rate-limiter-aspect-order: 397
