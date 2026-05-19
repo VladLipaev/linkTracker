@@ -69,7 +69,8 @@ public class StackOverflowClient {
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в SO", "stack_overflow_request", "success");
             return response;
-        } catch (org.springframework.web.client.HttpServerErrorException | org.springframework.web.client.ResourceAccessException e) {
+        } catch (org.springframework.web.client.HttpServerErrorException
+                | org.springframework.web.client.ResourceAccessException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
             throw e;
         } catch (RestClientException e) {

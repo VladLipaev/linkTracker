@@ -59,8 +59,8 @@ public class ExternalClientsRetryTest {
 
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
-            "app.kafka.schema-registry",
-            () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
+                "app.kafka.schema-registry",
+                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
         registry.add("app.redis.time-to-live", () -> "2s");
     }
 
@@ -73,24 +73,24 @@ public class ExternalClientsRetryTest {
         String path = "/repos/owner/repo/issues";
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs(Scenario.STARTED)
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("first failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("first failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("first failure")
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("second failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("first failure")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("second failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("second failure")
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader("Content-Type", "application/json")
-                .withBody("[]")));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("second failure")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("[]")));
 
         // when
         gitHubClient.fetchRepo(owner, repo, OffsetDateTime.now(), 1, 50);
@@ -104,8 +104,7 @@ public class ExternalClientsRetryTest {
         // given
         String path = "/repos/owner/repo/issues";
 
-        stubFor(get(urlPathEqualTo(path))
-            .willReturn(aResponse().withStatus(404)));
+        stubFor(get(urlPathEqualTo(path)).willReturn(aResponse().withStatus(404)));
 
         // when
         Throwable thrown = catchThrowable(() -> gitHubClient.fetchRepo("owner", "repo", OffsetDateTime.now(), 1, 50));
@@ -123,24 +122,24 @@ public class ExternalClientsRetryTest {
         String path = "/questions/123";
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs(Scenario.STARTED)
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("first failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("first failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("first failure")
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("second failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("first failure")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("second failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("second failure")
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader("Content-Type", "application/json")
-                .withBody("{}")));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("second failure")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{}")));
 
         // when
         stackOverflowClient.fetchQuestion(questionId);
@@ -156,24 +155,24 @@ public class ExternalClientsRetryTest {
         String scenarioName = "so_constant_interval";
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs(Scenario.STARTED)
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("first failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("first failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("first failure")
-            .willReturn(aResponse().withStatus(500))
-            .willSetStateTo("second failure"));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("first failure")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("second failure"));
 
         stubFor(get(urlPathEqualTo(path))
-            .inScenario(scenarioName)
-            .whenScenarioStateIs("second failure")
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader("Content-Type", "application/json")
-                .withBody("{}")));
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("second failure")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{}")));
 
         // when
         stackOverflowClient.fetchAnswers("123", 1600000000L);

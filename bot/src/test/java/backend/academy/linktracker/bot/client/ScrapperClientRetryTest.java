@@ -9,7 +9,6 @@ import backend.academy.linktracker.bot.AbstractIntegrationTest;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
 import backend.academy.linktracker.bot.config.TestBeans;
-import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
 import backend.academy.linktracker.bot.service.TelegramUpdateService;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -57,8 +56,7 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
         String url = "https://example.com";
         List<String> tags = List.of();
         String scenarioName = "retry500";
-        stubFor(post(urlEqualTo("/tg-chat/100"))
-                .willReturn(aResponse().withStatus(200)));
+        stubFor(post(urlEqualTo("/tg-chat/100")).willReturn(aResponse().withStatus(200)));
 
         stubFor(post(urlEqualTo("/links"))
                 .willReturn(aResponse()

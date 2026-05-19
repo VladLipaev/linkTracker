@@ -43,7 +43,8 @@ public class GitHubClient {
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в github", "github_request", "success");
             return response;
-        } catch (org.springframework.web.client.HttpServerErrorException | org.springframework.web.client.ResourceAccessException e) {
+        } catch (org.springframework.web.client.HttpServerErrorException
+                | org.springframework.web.client.ResourceAccessException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
             throw e;
         } catch (RestClientException e) {
