@@ -56,6 +56,7 @@ logging:
     org:
       springframework:
         kafka: DEBUG
+
 resilience4j:
   circuitbreaker:
     instances:
