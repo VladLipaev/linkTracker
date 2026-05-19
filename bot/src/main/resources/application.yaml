@@ -64,7 +64,7 @@ resilience4j:
         minimum-number-of-calls: 5
         failure-rate-threshold: 50
         permitted-number-of-calls-in-half-open-state: 5
-        wait-duration-in-open-state: 1s
+        wait-duration-in-open-state: 10s
         max-wait-duration-in-half-open-state: 1s
         record-exceptions:
           - org.springframework.web.client.HttpServerErrorException
@@ -84,6 +84,20 @@ resilience4j:
         max-attempts: 3
         wait-duration: 3s
         enable-randomized-wait: false
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+      scrapper-exponent:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: true
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
         retry-exceptions:
           - org.springframework.web.client.ResourceAccessException
           - org.springframework.web.client.HttpServerErrorException

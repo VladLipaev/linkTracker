@@ -31,7 +31,7 @@ public class GitHubClient {
                             .queryParam("page", page)
                             .build(owner, repo))
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, res) -> {
                         throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
                     })
                     .body(new ParameterizedTypeReference<>() {});
@@ -43,7 +43,9 @@ public class GitHubClient {
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в github", "github_request", "success");
             return response;
-
+        } catch (org.springframework.web.client.HttpServerErrorException | org.springframework.web.client.ResourceAccessException e) {
+            ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
+            throw e;
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
             throw new GitHubClientException("Github API error: " + e.getMessage());

@@ -62,13 +62,16 @@ public class StackOverflowClient {
                     .get()
                     .uri(uriFunction)
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, res) -> {
                         throw new StackOverflowException("StackOverflow API error: " + res.getStatusCode());
                     })
                     .body(responseType);
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в SO", "stack_overflow_request", "success");
             return response;
+        } catch (org.springframework.web.client.HttpServerErrorException | org.springframework.web.client.ResourceAccessException e) {
+            ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
+            throw e;
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
             throw new StackOverflowException("StackOverflow API error: " + e.getMessage());

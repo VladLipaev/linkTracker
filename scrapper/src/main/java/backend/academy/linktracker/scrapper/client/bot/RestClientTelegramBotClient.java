@@ -22,7 +22,6 @@ public class RestClientTelegramBotClient implements TelegramBotClient {
     @Override
     @RateLimiter(name = "bot")
     @CircuitBreaker(name = "bot", fallbackMethod = "fallbackSendUpdateKafka")
-    @Retry(name = "bot")
     public void sendUpdate(LinkUpdate linkUpdate) {
         restClient
                 .post()
@@ -50,7 +49,6 @@ public class RestClientTelegramBotClient implements TelegramBotClient {
         throw new BotClientException(description);
     }
 
-    @Transactional
     public void fallbackSendUpdateKafka(LinkUpdate linkUpdate, Throwable t) {
 
         if (t instanceof BotClientException botClientException) {

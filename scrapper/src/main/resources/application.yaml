@@ -100,7 +100,7 @@ resilience4j:
         minimum-number-of-calls: 5
         failure-rate-threshold: 50
         permitted-number-of-calls-in-half-open-state: 5
-        wait-duration-in-open-state: 1s
+        wait-duration-in-open-state: 10s
         max-wait-duration-in-half-open-state: 1s
         recordExceptions:
           - org.springframework.web.client.HttpServerErrorException
@@ -129,10 +129,35 @@ resilience4j:
           - io.github.resilience4j.ratelimiter.RequestNotPermitted
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
           - backend.academy.linktracker.scrapper.client.bot.BotClientException
+      bot-exponent:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: true
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.scrapper.client.bot.BotClientException
       external:
         max-attempts: 5
         wait-duration: 3s
         enable-randomized-wait: false
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+      external-exponent:
+        max-attempts: 5
+        wait-duration: 3s
+        enable-randomized-wait: true
+        exponential-backoff-multiplier: 2
+        enable-exponential-backoff: true
         retry-exceptions:
           - org.springframework.web.client.ResourceAccessException
           - org.springframework.web.client.HttpServerErrorException

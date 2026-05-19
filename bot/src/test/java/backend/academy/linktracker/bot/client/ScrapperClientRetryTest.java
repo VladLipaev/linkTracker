@@ -1,10 +1,6 @@
 package backend.academy.linktracker.bot.client;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.withinPercentage;
@@ -14,6 +10,7 @@ import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
 import backend.academy.linktracker.bot.config.TestBeans;
 import backend.academy.linktracker.bot.dto.LinkResponse;
+import backend.academy.linktracker.bot.dto.ListLinksResponse;
 import backend.academy.linktracker.bot.service.TelegramUpdateService;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
@@ -60,8 +57,18 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
         String url = "https://example.com";
         List<String> tags = List.of();
         String scenarioName = "retry500";
+        stubFor(post(urlEqualTo("/tg-chat/100"))
+                .willReturn(aResponse().withStatus(200)));
 
         stubFor(post(urlEqualTo("/links"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{}")));
+        scrapperClient.registerChat(chatId);
+        scrapperClient.addLink(chatId, url, tags);
+
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(
@@ -72,7 +79,7 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
                         )
                 .willSetStateTo("first failure"));
 
-        stubFor(post(urlEqualTo("/links"))
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("first failure")
                 .willReturn(aResponse()
@@ -81,21 +88,21 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
                         .withBody(""))
                 .willSetStateTo("second failure"));
 
-        stubFor(post(urlEqualTo("/links"))
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("second failure")
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\": 1, \"url\": \"" + url + "\", \"tags\": []}")));
+                        .withBody("{\"links\": [{\"id\": 1, \"url\": \"" + url + "\", \"tags\": []}], \"size\": 1}")));
 
         // when
-        LinkResponse linkResponse = scrapperClient.addLink(chatId, url, tags);
+        ListLinksResponse listLinksResponse = scrapperClient.getLinks(chatId, null);
 
         // then
-        assertThat(linkResponse).isNotNull();
-        assertThat(linkResponse.url()).isEqualTo(url);
-        WireMock.verify(3, postRequestedFor(urlEqualTo("/links")));
+        assertThat(listLinksResponse).isNotNull();
+        assertThat(listLinksResponse.links().getFirst().url()).isEqualTo(url);
+        WireMock.verify(3, getRequestedFor(urlEqualTo("/links")));
     }
 
     @Test
@@ -154,19 +161,19 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
         List<String> tags = List.of();
         String scenarioName = "constant_interval";
 
-        stubFor(post(urlEqualTo("/links"))
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("first failure"));
 
-        stubFor(post(urlEqualTo("/links"))
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("first failure")
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("second failure"));
 
-        stubFor(post(urlEqualTo("/links"))
+        stubFor(get(urlEqualTo("/links"))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("second failure")
                 .willReturn(aResponse()
@@ -175,10 +182,10 @@ public class ScrapperClientRetryTest extends AbstractIntegrationTest {
                         .withBody("{}")));
 
         // when
-        scrapperClient.addLink(chatId, url, tags);
+        scrapperClient.getLinks(chatId, null);
 
         // then
-        List<LoggedRequest> requests = WireMock.findAll(postRequestedFor(urlEqualTo("/links")));
+        List<LoggedRequest> requests = WireMock.findAll(getRequestedFor(urlEqualTo("/links")));
 
         assertThat(requests).hasSize(3);
 
