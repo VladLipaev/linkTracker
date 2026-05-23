@@ -2,6 +2,7 @@ package backend.academy.linktracker.scrapper.client;
 
 import backend.academy.linktracker.scrapper.handler.dto.StackOverflowResponse;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.net.URI;
 import java.util.function.Function;
@@ -18,7 +19,8 @@ public class StackOverflowClient {
     private final RestClient restClient;
     private final StackoverflowProperties properties;
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.QuestionItem> fetchQuestion(String id) {
         return executeWithLogging(
                 uriBuilder -> uriBuilder
@@ -29,7 +31,8 @@ public class StackOverflowClient {
                 new ParameterizedTypeReference<>() {});
     }
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.ActivityItem> fetchAnswers(String questionId, long fromDate) {
         return executeWithLogging(
                 uriBuilder -> uriBuilder
@@ -42,7 +45,8 @@ public class StackOverflowClient {
                 new ParameterizedTypeReference<>() {});
     }
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.ActivityItem> fetchComments(
             String questionId, long fromDateSec) {
         return executeWithLogging(

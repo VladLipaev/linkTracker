@@ -26,12 +26,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
 @WireMockTest(httpPort = 54321)
 @Import({TestBeans.class, KafkaConfiguration.class})
+@ActiveProfiles("test-external-constant-backoff")
 public class ExternalClientsRetryTest {
 
     static {
@@ -49,8 +51,8 @@ public class ExternalClientsRetryTest {
 
     @DynamicPropertySource
     static void handleProperties(DynamicPropertyRegistry registry) {
-        registry.add("resilience4j.retry.instances.external.wait-duration", () -> "500ms");
-        registry.add("resilience4j.retry.instances.external.max-attempts", () -> 3);
+        registry.add("resilience4j.retry.instances.external-exponent.wait-duration", () -> "500ms");
+        registry.add("resilience4j.retry.instances.external-exponent.max-attempts", () -> 3);
         registry.add("app.communication.client.read-timeout", () -> Duration.ofSeconds(1));
 
         registry.add("app.github.base-url", () -> "http://localhost:54321");

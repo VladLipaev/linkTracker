@@ -47,6 +47,11 @@ app:
       group-id: "bot-fresh-group-v1"
     topic:
       name: bot-updates-topic
+  rate-limiter:
+    api:
+      caffeine:
+        expire-time: 5m
+        size: 10000
 
 logging:
   pattern:
@@ -119,3 +124,8 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 5s
     rate-limiter-aspect-order: 397
+    configs:
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s

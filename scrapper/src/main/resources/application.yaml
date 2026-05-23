@@ -91,6 +91,11 @@ app:
       client:
         host: 127.0.0.1
     cache-key-prefix: links:byTgChat
+  rate-limiter:
+    api:
+      caffeine:
+        expire-time: 5m
+        size: 10000
 
 resilience4j:
   circuitbreaker:
@@ -113,6 +118,25 @@ resilience4j:
           - org.springframework.web.client.HttpClientErrorException.NotFound
           - org.springframework.web.client.HttpClientErrorException.Conflict
           - backend.academy.linktracker.scrapper.client.bot.BotClientException
+      external:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 10s
+        max-wait-duration-in-half-open-state: 1s
+        recordExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpClientErrorException.TooManyRequests
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException.BadRequest
+          - org.springframework.web.client.HttpClientErrorException.Unauthorized
+          - org.springframework.web.client.HttpClientErrorException.Forbidden
+          - org.springframework.web.client.HttpClientErrorException.NotFound
+          - org.springframework.web.client.HttpClientErrorException.Conflict
+          - backend.academy.linktracker.scrapper.client.StackOverflowException
+          - backend.academy.linktracker.scrapper.client.GitHubClientException
     circuit-breaker-aspect-order: 398
 
   retry:
@@ -176,6 +200,11 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 5s
     rate-limiter-aspect-order: 397
+    configs:
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
 logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
