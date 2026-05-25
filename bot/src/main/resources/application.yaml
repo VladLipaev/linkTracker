@@ -47,6 +47,11 @@ app:
       group-id: "bot-fresh-group-v1"
     topic:
       name: bot-updates-topic
+  rate-limiter:
+    api:
+      caffeine:
+        expire-time: 5m
+        size: 10000
 
 logging:
   pattern:
@@ -56,6 +61,7 @@ logging:
     org:
       springframework:
         kafka: DEBUG
+
 resilience4j:
   circuitbreaker:
     instances:
@@ -64,7 +70,7 @@ resilience4j:
         minimum-number-of-calls: 5
         failure-rate-threshold: 50
         permitted-number-of-calls-in-half-open-state: 5
-        wait-duration-in-open-state: 1s
+        wait-duration-in-open-state: 10s
         max-wait-duration-in-half-open-state: 1s
         record-exceptions:
           - org.springframework.web.client.HttpServerErrorException
@@ -92,6 +98,20 @@ resilience4j:
           - io.github.resilience4j.ratelimiter.RequestNotPermitted
           - io.github.resilience4j.circuitbreaker.CallNotPermittedException
           - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+      scrapper-exponent:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: true
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
     retry-aspect-order: 399
   ratelimiter:
     instances:
@@ -104,3 +124,8 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 5s
     rate-limiter-aspect-order: 397
+    configs:
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s

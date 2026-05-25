@@ -4,12 +4,10 @@ import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.service.kafka.KafkaNotificationUpdateSender;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
-import io.github.resilience4j.retry.annotation.Retry;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 @RequiredArgsConstructor
@@ -22,7 +20,6 @@ public class RestClientTelegramBotClient implements TelegramBotClient {
     @Override
     @RateLimiter(name = "bot")
     @CircuitBreaker(name = "bot", fallbackMethod = "fallbackSendUpdateKafka")
-    @Retry(name = "bot")
     public void sendUpdate(LinkUpdate linkUpdate) {
         restClient
                 .post()
@@ -50,8 +47,12 @@ public class RestClientTelegramBotClient implements TelegramBotClient {
         throw new BotClientException(description);
     }
 
-    @Transactional
     public void fallbackSendUpdateKafka(LinkUpdate linkUpdate, Throwable t) {
+
+        if (t instanceof BotClientException botClientException) {
+            throw botClientException;
+        }
+
         log.atError()
                 .setMessage("ошибка при отправке сообщения по rest, включается альтернативная кафка")
                 .addKeyValue("error.message", t.getMessage())

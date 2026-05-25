@@ -28,7 +28,11 @@ public class ScrapperClientBeans {
         clientHttpRequestFactory.setReadTimeout(readTimeout);
         clientHttpRequestFactory.setConnectTimeout(connectTimeout);
         return new RestClientTelegramBotClient(
-                RestClient.builder().baseUrl(botBaseUri).build(), updateSender);
+                RestClient.builder()
+                        .requestFactory(clientHttpRequestFactory)
+                        .baseUrl(botBaseUri)
+                        .build(),
+                updateSender);
     }
 
     @Bean

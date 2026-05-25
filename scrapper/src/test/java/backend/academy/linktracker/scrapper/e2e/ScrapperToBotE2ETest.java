@@ -5,12 +5,14 @@ import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCH
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
 import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import backend.academy.linktracker.bot.BotApplication;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.scrapper.ScrapperApplication;
+import backend.academy.linktracker.scrapper.client.bot.RestClientTelegramBotClient;
 import backend.academy.linktracker.scrapper.config.KafkaConfiguration;
 import backend.academy.linktracker.scrapper.config.TestBeans;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
@@ -28,12 +30,15 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.web.client.HttpClientErrorException;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(classes = {BotApplication.class, ScrapperApplication.class})
@@ -58,13 +63,16 @@ public class ScrapperToBotE2ETest {
     }
 
     @Autowired
-    SyncNotificationUpdateSender notificationUpdateSender;
+    private SyncNotificationUpdateSender notificationUpdateSender;
 
     @MockitoBean
-    ScrapperClient scrapperClient;
+    private ScrapperClient scrapperClient;
 
     @Autowired
-    TelegramBot telegrammBot;
+    private TelegramBot telegrammBot;
+
+    @MockitoSpyBean
+    private RestClientTelegramBotClient restClientTelegramBotClient;
 
     @TestConfiguration
     static class MockBotConfig {
@@ -96,6 +104,9 @@ public class ScrapperToBotE2ETest {
 
     @Test
     void scrapperOutbox_kafka_botListener_callsTelegram() {
+        doThrow(new HttpClientErrorException(HttpStatus.TOO_MANY_REQUESTS))
+                .when(restClientTelegramBotClient)
+                .sendUpdate(any());
         notificationUpdateSender.sendUpdate(
                 new LinkUpdate(1L, "https://github.com/VladLipaev/finance-tracker", "ok", List.of(42L)));
         verify(telegrammBot, timeout(30_000)).execute(any(SendMessage.class));

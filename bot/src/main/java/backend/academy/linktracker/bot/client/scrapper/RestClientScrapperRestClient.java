@@ -41,7 +41,6 @@ public class RestClientScrapperRestClient implements ScrapperClient {
     @Override
     @RateLimiter(name = "scrapper")
     @CircuitBreaker(name = "scrapper", fallbackMethod = "fallbackKafkaRegChat")
-    @Retry(name = "scrapper")
     public void registerChat(long chatId) {
         restClient
                 .post()
@@ -69,7 +68,6 @@ public class RestClientScrapperRestClient implements ScrapperClient {
     @Override
     @RateLimiter(name = "scrapper")
     @CircuitBreaker(name = "scrapper", fallbackMethod = "fallbackKafkaAddLink")
-    @Retry(name = "scrapper")
     public LinkResponse addLink(long chatId, String link, List<String> tags) {
         return restClient
                 .post()
