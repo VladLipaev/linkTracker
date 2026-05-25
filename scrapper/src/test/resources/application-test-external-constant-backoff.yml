@@ -1,0 +1,6 @@
+resilience4j:
+  retry:
+    instances:
+      external-exponent:
+        enable-randomized-wait: false
+        enable-exponential-backoff: false

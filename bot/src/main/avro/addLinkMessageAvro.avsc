@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "AddLinkMessageAvro",
+  "namespace": "backend.academy.linktracker.bot.dto.avro",
+  "fields": [
+    {"name": "chatId", "type": "long"},
+    {"name": "url", "type": "string"},
+    {"name": "tags", "type": {"type": "array", "items": {"type": "string", "avro.java.string": "String"}}}
+  ]
+}

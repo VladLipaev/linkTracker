@@ -1,28 +1,17 @@
 package backend.academy.linktracker.bot.config;
 
-import backend.academy.linktracker.bot.client.scrapper.RestClientScrapperRestClient;
 import javax.sql.DataSource;
 import liquibase.integration.spring.SpringLiquibase;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.web.client.RestClient;
 
 @TestConfiguration
 public class TestBeans {
 
     private static final String DLQ_TOPIC = "link-updates-topic-dlt";
 
-    @Bean
-    @Primary
-    public RestClientScrapperRestClient restClient(
-            @Value("${app.scrapper.uri:http://localhost:54321}") String scrapperBaseUri) {
-        return new RestClientScrapperRestClient(
-                RestClient.builder().baseUrl(scrapperBaseUri).build());
-    }
     //
     //    public static final Network SHARED_NETWORK = Network.newNetwork();
     //

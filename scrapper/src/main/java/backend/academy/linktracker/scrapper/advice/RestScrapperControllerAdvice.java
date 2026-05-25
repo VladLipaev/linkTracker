@@ -5,8 +5,10 @@ import backend.academy.linktracker.scrapper.service.ChatAlreadyExistsException;
 import backend.academy.linktracker.scrapper.service.ChatNotFoundException;
 import backend.academy.linktracker.scrapper.service.LinkAlreadyExistsException;
 import backend.academy.linktracker.scrapper.service.UnsupportedLinkException;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
+@Slf4j
 public class RestScrapperControllerAdvice {
     @ExceptionHandler(ChatAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleChatAlreadyExists(ChatAlreadyExistsException ex) {
@@ -73,5 +76,14 @@ public class RestScrapperControllerAdvice {
                         .map(StackTraceElement::toString)
                         .toList());
         return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ApiErrorResponse> handleRateLimit(RequestNotPermitted ex) {
+        log.atError()
+                .setMessage("превышен лимит запросов")
+                .addKeyValue("error.message", ex.getMessage())
+                .log();
+        return createResponse(ex, HttpStatus.TOO_MANY_REQUESTS, "превышен лимит запросов");
     }
 }

@@ -14,7 +14,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -34,11 +33,6 @@ import org.springframework.util.backoff.FixedBackOff;
 @EnableKafka
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(
-        prefix = "app.communication.controller",
-        name = "mode",
-        havingValue = "kafka",
-        matchIfMissing = true)
 public class KafkaConsumerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
@@ -75,12 +69,12 @@ public class KafkaConsumerConfig {
 
     @Bean
     public KafkaListenerContainerFactory<?> kafkaListenerContainerFactory(
-            ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, Object> kafkaTemplate) {
+            ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, Object> botDlqKafkaTemplate) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         FixedBackOff fixedBackOff = new FixedBackOff(interval, attempts);
         DefaultErrorHandler errorHandler =
-                new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate), fixedBackOff);
+                new DefaultErrorHandler(new DeadLetterPublishingRecoverer(botDlqKafkaTemplate), fixedBackOff);
         // все исключения которые мы не будем обрабатывать сами для повторной отправки просто сразу отправляем в DLT
         errorHandler.addNotRetryableExceptions(Exception.class);
         errorHandler.addRetryableExceptions(RetryableException.class);
@@ -91,12 +85,12 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, Object> botKafkaTemplate(ProducerFactory<String, Object> producerFactory) {
+    public KafkaTemplate<String, Object> botDlqKafkaTemplate(ProducerFactory<String, Object> producerFactory) {
         return new KafkaTemplate<>(producerFactory);
     }
 
     @Bean
-    public ProducerFactory<String, Object> botProducerFactory() {
+    public ProducerFactory<String, Object> botDlqProducerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);

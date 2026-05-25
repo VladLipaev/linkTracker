@@ -20,15 +20,23 @@ public class SyncNotificationUpdateSender implements NotificationUpdateSender {
 
     @Override
     public void sendUpdate(LinkUpdate update) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                log.atInfo()
-                        .setMessage("Отправляем уведомление!")
-                        .addKeyValue("url", update.url())
-                        .log();
-                botClient.sendUpdate(update);
-            }
-        });
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    send(update);
+                }
+            });
+        } else {
+            send(update);
+        }
+    }
+
+    private void send(LinkUpdate update) {
+        log.atInfo()
+                .setMessage("Отправляем уведомление!")
+                .addKeyValue("url", update.url())
+                .log();
+        botClient.sendUpdate(update);
     }
 }

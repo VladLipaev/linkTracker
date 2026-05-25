@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
@@ -27,7 +26,6 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(prefix = "app.communication.client", name = "mode", havingValue = "kafka", matchIfMissing = true)
 public class KafkaOutboxBatcher {
 
     private final OutBoxRepository outBoxRepository;
