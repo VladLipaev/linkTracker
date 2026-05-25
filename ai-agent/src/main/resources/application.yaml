@@ -2,5 +2,35 @@ server:
   port: 8082
 
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   application:
     name: ai-agent
+  kafka:
+    bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
+app:
+  kafka:
+    consumer:
+      retry:
+        attempts: 3
+        interval: 3000
+      concurrency: 3
+      schema-registry: http://localhost:9093
+      group-id: "agent-fresh-group-v1"
+      topic:
+        name: link.raw-updates
+  filtering:
+    stop-words:
+      - spam
+      - ads
+      - promo
+    excluded-authors:
+      - self
+    min-length: 250
+  summarization:
+    threshold: 500
+  yandexgpt:
+    api-key: ${YANDEXGPT_API_KEY}
+    folder-id: ${YANDEXGPT_FOLDER_ID}

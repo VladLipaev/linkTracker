@@ -2,6 +2,7 @@ package backend.academy.linktracker.scrapper.service;
 
 import backend.academy.linktracker.scrapper.client.bot.TelegramBotClient;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
+import jakarta.annotation.Priority;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -11,6 +12,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 @RequiredArgsConstructor
+@Priority(1)
 @ConditionalOnExpression(
         "'${app.communication.client.mode}'.equals('rest') || '${app.communication.client.mode}'.equals('grpc')")
 @Slf4j

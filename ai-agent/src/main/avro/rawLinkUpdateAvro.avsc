@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "RawLinkUpdateAvro",
+  "namespace": "backend.academy.linktracker.scrapper.dto.avro",
+  "fields": [
+    {"name": "id", "type": "long"},
+    {"name": "description", "type": "string"},
+    {"name": "author", "type": "string"},
+    {"name": "tgChatIds", "type": {"type": "array", "items": "long"}}
+  ]
+}

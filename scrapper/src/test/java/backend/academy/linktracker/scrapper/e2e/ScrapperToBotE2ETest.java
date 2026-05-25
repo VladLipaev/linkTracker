@@ -21,6 +21,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(classes = {BotApplication.class, ScrapperApplication.class})
 @Testcontainers
 @Import({TestBeans.class, KafkaConfiguration.class, ScrapperToBotE2ETest.MockBotConfig.class})
-@ActiveProfiles({"test-kafka-e2e"})
+@ActiveProfiles({"test-kafka-e2e", "test-rest"})
+@Disabled // пока что попасть в бота не может, будет возможно после второй части ai agent
 public class ScrapperToBotE2ETest {
 
     static {

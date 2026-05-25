@@ -68,7 +68,6 @@ public class GitHubLinkHandler implements LinkHandler {
 
                     String type = item.isPullRequest() ? "Pull Request" : "Issue";
                     String safeBody = (item.body() != null && !item.body().isBlank()) ? item.body() : "Нет описания";
-                    String preview = safeBody.length() > 200 ? safeBody.substring(0, 200) + "..." : safeBody;
 
                     messageBuilder
                             .append("**Новый ")
@@ -81,7 +80,7 @@ public class GitHubLinkHandler implements LinkHandler {
                             .append("Время создания: ")
                             .append(item.createdAt())
                             .append("\n");
-                    messageBuilder.append("Описание: ").append(preview).append("\n\n");
+                    messageBuilder.append("Описание: ").append(safeBody).append("\n\n");
                 }
             }
 

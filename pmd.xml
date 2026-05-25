@@ -62,4 +62,5 @@
     <exclude-pattern>.*/backend/academy/linktracker/grpc/.*</exclude-pattern>
     <exclude-pattern>.*/backend/academy/linktracker/scrapper/dto/avro/.*</exclude-pattern>
     <exclude-pattern>.*/backend/academy/linktracker/bot/dto/avro/.*</exclude-pattern>
+    <exclude-pattern>.*/backend/academy/linktracker/ai-agent/dto/avro/.*</exclude-pattern>
 </ruleset>
