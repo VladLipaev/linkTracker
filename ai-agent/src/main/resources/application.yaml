@@ -34,3 +34,4 @@ app:
   yandexgpt:
     api-key: ${YANDEXGPT_API_KEY}
     folder-id: ${YANDEXGPT_FOLDER_ID}
+    uri: https://llm.api.cloud.yandex.net

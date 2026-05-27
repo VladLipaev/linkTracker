@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,9 @@ public class RawLinkUpdateValidator {
     private final FilteringProperties filteringProperties;
 
     private Pattern stopWordsPattern;
+
+    @Value("${app.summarization.threshold:500}")
+    private Integer threshold;
 
     @PostConstruct
     public void init() {
@@ -56,6 +60,6 @@ public class RawLinkUpdateValidator {
     }
 
     public boolean isAboveThreshold(RawLinkUpdateAvro rawLinkUpdateAvro) {
-        return rawLinkUpdateAvro.getDescription().length() > 500;
+        return rawLinkUpdateAvro.getDescription().length() > threshold;
     }
 }

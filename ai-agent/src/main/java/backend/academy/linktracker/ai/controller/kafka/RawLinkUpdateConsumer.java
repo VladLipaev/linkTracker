@@ -21,7 +21,7 @@ public class RawLinkUpdateConsumer {
             RawLinkUpdateAvro rawLinkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
         if (eventIdBytes == null) {
             log.atError().setMessage("event-id не был указан").log();
-            throw new NullPointerException("event-id не был указан");
+            throw new IllegalArgumentException("event-id не был указан");
         }
         boolean validate = rawLinkUpdateValidator.validate(rawLinkUpdateAvro);
         if (validate && rawLinkUpdateValidator.isAboveThreshold(rawLinkUpdateAvro)) {
