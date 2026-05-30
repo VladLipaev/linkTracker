@@ -46,7 +46,7 @@ public class AgentConsumerConfig {
     @Value("${app.kafka.consumer.concurrency}")
     private Integer concurrency;
 
-    @Value("${app.kafka.consumer.schema-registry}")
+    @Value("${app.kafka.schema-registry}")
     private String schemaRegistry;
 
     @Value("${app.kafka.consumer.group-id}")

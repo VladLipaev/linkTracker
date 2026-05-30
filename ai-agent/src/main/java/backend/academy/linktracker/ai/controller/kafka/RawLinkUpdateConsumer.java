@@ -1,7 +1,13 @@
 package backend.academy.linktracker.ai.controller.kafka;
 
+import backend.academy.linktracker.ai.entity.dto.ProcessedLinkUpdateDto;
+import backend.academy.linktracker.ai.service.AiAgentIdempotencyService;
+import backend.academy.linktracker.ai.service.PrioritizationService;
+import backend.academy.linktracker.ai.service.ProcessedLinkUpdateService;
 import backend.academy.linktracker.ai.service.SummarizeService;
 import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -15,6 +21,9 @@ public class RawLinkUpdateConsumer {
 
     private final RawLinkUpdateValidator rawLinkUpdateValidator;
     private final SummarizeService summarizeService;
+    private final PrioritizationService prioritizationService;
+    private final AiAgentIdempotencyService idempotencyService;
+    private final ProcessedLinkUpdateService processedLinkUpdateService;
 
     @KafkaListener(topics = "${app.kafka.consumer.topic.name}")
     public void listen(
@@ -24,12 +33,36 @@ public class RawLinkUpdateConsumer {
             throw new NullPointerException("event-id не был указан");
         }
         boolean validate = rawLinkUpdateValidator.validate(rawLinkUpdateAvro);
-        if (validate && rawLinkUpdateValidator.isAboveThreshold(rawLinkUpdateAvro)) {
-            rawLinkUpdateAvro.setDescription(summarizeService.summarize(rawLinkUpdateAvro.getDescription()));
-            log.atInfo()
-                    .setMessage(rawLinkUpdateAvro.getDescription())
-                    .addKeyValue("id", rawLinkUpdateAvro.getId())
+        if (!validate) {
+            log.atError()
+                    .setMessage("Сообщение не прошло валидацию")
+                    .addKeyValue("message.id", rawLinkUpdateAvro.getId())
                     .log();
+            throw new RawLinkUpdateValidationException("Сообщение не прошло валидацию");
         }
+        String eventIdString = new String(eventIdBytes, StandardCharsets.UTF_8);
+        UUID eventId = UUID.fromString(eventIdString);
+        if (!idempotencyService.tryLock(eventId)) {
+            log.atWarn()
+                    .setMessage("данное сообщение уже обрабатывается или было обработано")
+                    .addKeyValue("message.id", eventId)
+                    .log();
+            return;
+        }
+        String url = extractUrl(rawLinkUpdateAvro.getDescription());
+        ProcessedLinkUpdateDto processedLinkUpdateDto = prioritizationService.prioritize(rawLinkUpdateAvro);
+        if (rawLinkUpdateValidator.isAboveThreshold(rawLinkUpdateAvro)) {
+            processedLinkUpdateDto.setDescription(
+                    String.format("%s%n%s", url, summarizeService.summarize(processedLinkUpdateDto.getDescription())));
+        }
+        processedLinkUpdateService.saveProcessedLinkUpdate(processedLinkUpdateDto);
+    }
+
+    private String extractUrl(String description) {
+        int newlineIndex = description.indexOf('\n');
+        if (newlineIndex != -1) {
+            return description.substring(0, newlineIndex).trim();
+        }
+        return "unknown url";
     }
 }

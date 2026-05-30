@@ -4,7 +4,7 @@ import backend.academy.linktracker.bot.controller.kafka.exception.RetryableExcep
 import backend.academy.linktracker.bot.controller.kafka.service.IdempotencyService;
 import backend.academy.linktracker.bot.dto.LinkUpdate;
 import backend.academy.linktracker.bot.service.TelegramUpdateService;
-import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
+import backend.academy.linktracker.scrapper.dto.avro.ProcessedLinkUpdateAvro;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
@@ -28,9 +28,9 @@ public class Consumer {
     private final Validator validator;
     private final AvroToLinkUpdate avroToLinkUpdate;
 
-    @KafkaListener(topics = "${app.kafka.topic.name:bot-updates-topic}")
+    @KafkaListener(topics = "${app.kafka.topic.name:link.processed-updates}")
     public void listen(
-            LinkUpdateAvro linkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
+            ProcessedLinkUpdateAvro linkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
         if (eventIdBytes == null) {
             log.atError().setMessage("event-id не был указан").log();
             throw new NullPointerException("event-id не был указан");

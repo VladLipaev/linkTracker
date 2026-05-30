@@ -3,24 +3,45 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
+    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}?reWriteBatchedInserts=true
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   application:
     name: ai-agent
   kafka:
     bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100
+        order_inserts: true
 app:
   kafka:
+    schema-registry: http://localhost:9093
     consumer:
       retry:
         attempts: 3
         interval: 3000
       concurrency: 3
-      schema-registry: http://localhost:9093
       group-id: "agent-fresh-group-v1"
       topic:
         name: link.raw-updates
+    producer:
+      send-delay: 60s
+      topic:
+        name: link.processed-updates
+        partitions: 3
+        replicas: 3
+      outbox:
+        max-retries: 5
+        delay: 120s
+        max-batches: 10
+        batch-send-size: 500
+        batch-clean-size: 5000
+        batch-take-size: 5000
+      min-insync-replicas: 2
   filtering:
     stop-words:
       - spam
@@ -34,3 +55,21 @@ app:
   yandexgpt:
     api-key: ${YANDEXGPT_API_KEY}
     folder-id: ${YANDEXGPT_FOLDER_ID}
+    uri: https://llm.api.cloud.yandex.net
+  prioritization:
+    high-keywords:
+      - critical
+      - urgent
+      - breaking
+      - security
+    low-keywords:
+      - minor
+      - typo
+      - chore
+      - docs
+  grouping:
+    window-ms: 30000
+
+logging:
+  level:
+    org.hibernate: DEBUG

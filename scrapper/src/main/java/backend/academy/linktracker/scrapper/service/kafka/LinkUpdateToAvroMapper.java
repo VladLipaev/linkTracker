@@ -60,7 +60,7 @@ public class LinkUpdateToAvroMapper {
 
             return RawLinkUpdateAvro.newBuilder()
                     .setId(linkUpdate.id())
-                    .setDescription(description)
+                    .setDescription(String.format("%s%n%s", url, description))
                     .setAuthor(rawLinkUpdateAuthor)
                     .setTgChatIds(linkUpdate.tgChatIds())
                     .build();
@@ -76,7 +76,7 @@ public class LinkUpdateToAvroMapper {
 
             return RawLinkUpdateAvro.newBuilder()
                     .setId(linkUpdate.id())
-                    .setDescription(description)
+                    .setDescription(String.format("%s%n%s", url, description))
                     .setAuthor(rawLinkUpdateAuthor)
                     .setTgChatIds(linkUpdate.tgChatIds())
                     .build();
