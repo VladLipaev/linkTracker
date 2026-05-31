@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.controller.kafka;
 
 import backend.academy.linktracker.bot.dto.avro.RemoveLinkMessageAvro;
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +16,11 @@ import org.springframework.stereotype.Controller;
 public class RemoveLinkConsumer {
 
     private final ScrapperLinksService linksService;
+    private final ScrapperMetrics metrics;
 
     @KafkaListener(topics = "${app.kafka.consumers.topic.link-remove}")
     public void listen(RemoveLinkMessageAvro removeLinkMessageAvro) {
+        long start = System.currentTimeMillis();
         long chatId = removeLinkMessageAvro.getChatId();
         RemoveLinkRequest removeLinkRequest = new RemoveLinkRequest(removeLinkMessageAvro.getUrl());
 
@@ -30,18 +33,20 @@ public class RemoveLinkConsumer {
                     .log();
         } catch (DataAccessException e) {
             log.atError()
-                    .setMessage("Ошибка обработки сообщения: нет доступа к бд")
+                    .setMessage("Ошибка обработки удаления ссылки: нет доступа к бд")
                     .addKeyValue("chatId", chatId)
                     .addKeyValue("error", e.getMessage())
                     .log();
             throw new RetryableException(e);
         } catch (Exception e) {
             log.atError()
-                    .setMessage("Ошибка обработки сообщения")
+                    .setMessage("Ошибка обработки удаления ссылки")
                     .addKeyValue("chatId", chatId)
                     .addKeyValue("error", e.getMessage())
                     .log();
             throw e;
+        } finally {
+            metrics.recordRequestDuration(System.currentTimeMillis() - start, "kafka", "consumer");
         }
     }
 }

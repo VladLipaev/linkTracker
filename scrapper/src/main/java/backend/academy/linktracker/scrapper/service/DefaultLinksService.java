@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.service;
 
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
@@ -36,6 +37,7 @@ public class DefaultLinksService implements LinksService {
     private final TgChatRepository tgChatRepository;
     private final LinkValidator linkValidator;
     private final SubscriptionRepository subscriptionRepository;
+    private final ScrapperMetrics metrics;
 
     @Value("${app.controller.batch-size}")
     private Integer BATCH_SIZE;
@@ -106,6 +108,8 @@ public class DefaultLinksService implements LinksService {
             subscription.setTags(request.tags());
         }
         subscriptionRepository.save(subscription);
+        String domain = extractDomain(url);
+        metrics.incrementLinks(domain);
         return new LinkResponse(savedLink.getId(), savedLink.getUrl(), tags);
     }
 
@@ -138,6 +142,16 @@ public class DefaultLinksService implements LinksService {
         if (!subscriptionRepository.existsByLinkId(link.getId())) {
             linksRepository.deleteById(link.getId());
         }
+        String domain = extractDomain(removeLinkRequest.link());
+        metrics.decrementLinks(domain);
         return new LinkResponse(link.getId(), link.getUrl(), tags);
+    }
+
+    private String extractDomain(String url) {
+        try {
+            return new java.net.URI(url).getHost().replace("www.", "");
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 }

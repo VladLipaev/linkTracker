@@ -3,6 +3,7 @@ package backend.academy.linktracker.scrapper.config;
 import backend.academy.linktracker.scrapper.client.GitHubClient;
 import backend.academy.linktracker.scrapper.client.StackOverflowClient;
 import backend.academy.linktracker.scrapper.client.bot.RestClientTelegramBotClient;
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.properties.GithubProperties;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
 import backend.academy.linktracker.scrapper.service.kafka.KafkaNotificationUpdateSender;
@@ -40,16 +41,19 @@ public class ScrapperClientBeans {
             GithubProperties githubProperties,
             @Value("${app.github.base-url}") String baseUrl,
             @Value("${app.communication.client.connect-timeout:5s}") Duration connectTimeout,
-            @Value("${app.communication.client.read-timeout:10s}") Duration readTimeout) {
+            @Value("${app.communication.client.read-timeout:10s}") Duration readTimeout,
+            ScrapperMetrics scrapperMetrics) {
         SimpleClientHttpRequestFactory simpleClientHttpRequestFactory = new SimpleClientHttpRequestFactory();
         simpleClientHttpRequestFactory.setConnectTimeout(connectTimeout);
         simpleClientHttpRequestFactory.setReadTimeout(readTimeout);
-        return new GitHubClient(RestClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader("Authorization", "Bearer " + githubProperties.getToken())
-                .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
-                .requestFactory(simpleClientHttpRequestFactory)
-                .build());
+        return new GitHubClient(
+                RestClient.builder()
+                        .baseUrl(baseUrl)
+                        .defaultHeader("Authorization", "Bearer " + githubProperties.getToken())
+                        .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
+                        .requestFactory(simpleClientHttpRequestFactory)
+                        .build(),
+                scrapperMetrics);
     }
 
     @Bean
@@ -57,7 +61,8 @@ public class ScrapperClientBeans {
             StackoverflowProperties stackoverflowProperties,
             @Value("${app.stackoverflow.base-url}") String baseUrl,
             @Value("${app.communication.client.connect-timeout:5s}") Duration connectTimeout,
-            @Value("${app.communication.client.read-timeout:10s}") Duration readTimeout) {
+            @Value("${app.communication.client.read-timeout:10s}") Duration readTimeout,
+            ScrapperMetrics scrapperMetrics) {
         SimpleClientHttpRequestFactory simpleClientHttpRequestFactory = new SimpleClientHttpRequestFactory();
         simpleClientHttpRequestFactory.setConnectTimeout(connectTimeout);
         simpleClientHttpRequestFactory.setReadTimeout(readTimeout);
@@ -66,6 +71,7 @@ public class ScrapperClientBeans {
                         .baseUrl(baseUrl)
                         .requestFactory(simpleClientHttpRequestFactory)
                         .build(),
-                stackoverflowProperties);
+                stackoverflowProperties,
+                scrapperMetrics);
     }
 }

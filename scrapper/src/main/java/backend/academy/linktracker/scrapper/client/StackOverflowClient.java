@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.client;
 
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.handler.dto.StackOverflowResponse;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -18,6 +19,7 @@ public class StackOverflowClient {
 
     private final RestClient restClient;
     private final StackoverflowProperties properties;
+    private final ScrapperMetrics metrics;
 
     @Retry(name = "external-exponent")
     @CircuitBreaker(name = "external")
@@ -61,6 +63,7 @@ public class StackOverflowClient {
 
     private <T> T executeWithLogging(
             Function<UriBuilder, URI> uriFunction, ParameterizedTypeReference<T> responseType) {
+        long start = System.currentTimeMillis();
         try {
             T response = this.restClient
                     .get()
@@ -80,6 +83,8 @@ public class StackOverflowClient {
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
             throw new StackOverflowException("StackOverflow API error: " + e.getMessage());
+        } finally {
+            metrics.recordRequestDuration(System.currentTimeMillis() - start, "external_source", "stackoverflow.com");
         }
     }
 }

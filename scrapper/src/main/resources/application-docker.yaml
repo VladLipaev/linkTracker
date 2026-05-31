@@ -12,20 +12,23 @@ spring:
         address: 'static://localhost:9080'
         negotiation-type: plaintext
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
     show-sql: true
   kafka:
-    bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
+    bootstrap-servers: broker-1:9092,broker-2:9092,broker-3:9092
   data:
     redis:
       cluster:
         nodes:
-          - 127.0.0.1:7001
-          - 127.0.0.1:7002
-          - 127.0.0.1:7003
+          - valkey-node-1:7001
+          - valkey-node-2:7002
+          - valkey-node-3:7003
+          - valkey-node-4:7004
+          - valkey-node-5:7005
+          - valkey-node-6:7006
       lettuce:
         cluster:
           refresh:
@@ -41,7 +44,7 @@ app:
     base-url: https://api.github.com
     per-page: 50
   bot:
-    uri: http://localhost:8080
+    uri: http://bot:8080
   scheduler:
     enable: true
     interval: 30s
@@ -62,7 +65,7 @@ app:
   client:
     batch-size: 100
   kafka:
-    schema-registry: http://localhost:9093
+    schema-registry: http://schema-registry:9093
     topic:
       name: link.raw-updates
       partitions: 3
@@ -89,7 +92,7 @@ app:
     time-to-live: 2m
     lettuce:
       client:
-        host: 127.0.0.1
+        host:
     cache-key-prefix: links:byTgChat
   rate-limiter:
     api:
@@ -228,8 +231,3 @@ management:
     export:
       prometheus:
         enabled: true
-        pushgateway:
-              enabled: true
-              base-url: http://localhost:9091
-              push-rate: 30s
-              job: ${spring.application.name}

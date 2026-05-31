@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/${POSTGRES_DB:postgres}
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB:postgres}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   application:
@@ -16,7 +16,7 @@ spring:
         address: 'static://localhost:9081'
         negotiation-type: plaintext
   kafka:
-    bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
+    bootstrap-servers: broker-1:9092,broker-2:9092,broker-3:9092
 app:
   telegram:
     url: https://api.telegram.org/bot
@@ -24,7 +24,7 @@ app:
     update-listener-sleep: 1s
     debug: false
   scrapper:
-    uri: http://localhost:8081
+    uri: http://scrapper:8081
   communication:
     client:
       mode: rest # rest
@@ -42,7 +42,7 @@ app:
       attempts: 3
       interval: 3000
     concurrency: 3
-    schema-registry: http://localhost:9093
+    schema-registry: http://schema-registry:9093
     consumer:
       group-id: "bot-fresh-group-v1"
     topic:
@@ -141,13 +141,6 @@ management:
       path-mapping:
         prometheus: metrics
   metrics:
-    export:
-      prometheus:
-        pushgateway:
-          enabled: true
-          base-url: http://localhost:9091
-          push-rate: 30s
-          job: ${spring.application.name}
     distribution:
       percentiles-histogram:
         http:
