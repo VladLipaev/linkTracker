@@ -35,4 +35,6 @@ public interface JpaLinksRepository extends JpaRepository<Link, Long> {
 
     @Query(value = "SELECT * FROM links ORDER BY checked_at NULLS FIRST", nativeQuery = true)
     Slice<Link> findLinksToCheck(Pageable pageable);
+
+    long countByUrlContaining(String s);
 }

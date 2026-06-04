@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "ProcessedLinkUpdateAvro",
+  "namespace": "backend.academy.linktracker.scrapper.dto.avro",
+  "fields": [
+    {"name": "id", "type": "long"},
+    {"name": "description", "type": "string"},
+    {"name": "tgChatIds", "type": {"type": "array", "items": "long"}},
+    {"name": "priority", "type": "string"}
+  ]
+}

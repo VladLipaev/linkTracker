@@ -35,9 +35,9 @@ public class ScrapperRestControllerRateLimiterTest {
 
     @DynamicPropertySource
     static void handleProperties(DynamicPropertyRegistry registry) {
-        registry.add("resilience4j.ratelimiter.instances.api.limit-for-period", () -> 1);
-        registry.add("resilience4j.ratelimiter.instances.api.limit-refresh-period", () -> "10s");
-        registry.add("resilience4j.ratelimiter.instances.api.timeout-duration", () -> "0s");
+        registry.add("resilience4j.ratelimiter.configs.api.limit-for-period", () -> 1);
+        registry.add("resilience4j.ratelimiter.configs.api.limit-refresh-period", () -> "10s");
+        registry.add("resilience4j.ratelimiter.configs.api.timeout-duration", () -> "0s");
         registry.add("app.redis.time-to-live", () -> "2s");
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
@@ -56,9 +56,8 @@ public class ScrapperRestControllerRateLimiterTest {
                 // then
                 .andExpect(status().isOk());
 
-        String endpoint2 = "/tg-chat/101";
         // when
-        mockMvc.perform(post(endpoint2).contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post(endpoint).contentType(MediaType.APPLICATION_JSON))
                 // then
                 .andExpect(status().isTooManyRequests());
     }

@@ -1,7 +1,9 @@
 package backend.academy.linktracker.scrapper.client;
 
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.handler.dto.StackOverflowResponse;
 import backend.academy.linktracker.scrapper.properties.StackoverflowProperties;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.net.URI;
 import java.util.function.Function;
@@ -17,8 +19,10 @@ public class StackOverflowClient {
 
     private final RestClient restClient;
     private final StackoverflowProperties properties;
+    private final ScrapperMetrics metrics;
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.QuestionItem> fetchQuestion(String id) {
         return executeWithLogging(
                 uriBuilder -> uriBuilder
@@ -29,7 +33,8 @@ public class StackOverflowClient {
                 new ParameterizedTypeReference<>() {});
     }
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.ActivityItem> fetchAnswers(String questionId, long fromDate) {
         return executeWithLogging(
                 uriBuilder -> uriBuilder
@@ -42,7 +47,8 @@ public class StackOverflowClient {
                 new ParameterizedTypeReference<>() {});
     }
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public StackOverflowResponse<StackOverflowResponse.ActivityItem> fetchComments(
             String questionId, long fromDateSec) {
         return executeWithLogging(
@@ -57,21 +63,28 @@ public class StackOverflowClient {
 
     private <T> T executeWithLogging(
             Function<UriBuilder, URI> uriFunction, ParameterizedTypeReference<T> responseType) {
+        long start = System.currentTimeMillis();
         try {
             T response = this.restClient
                     .get()
                     .uri(uriFunction)
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, res) -> {
                         throw new StackOverflowException("StackOverflow API error: " + res.getStatusCode());
                     })
                     .body(responseType);
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в SO", "stack_overflow_request", "success");
             return response;
+        } catch (org.springframework.web.client.HttpServerErrorException
+                | org.springframework.web.client.ResourceAccessException e) {
+            ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
+            throw e;
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в SO", "stack_overflow_request", "failure", e);
             throw new StackOverflowException("StackOverflow API error: " + e.getMessage());
+        } finally {
+            metrics.recordRequestDuration(System.currentTimeMillis() - start, "external_source", "stackoverflow.com");
         }
     }
 }

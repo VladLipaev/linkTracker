@@ -1,6 +1,8 @@
 package backend.academy.linktracker.scrapper.client;
 
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.handler.dto.GitHubIssueResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,10 +18,13 @@ import org.springframework.web.client.RestClientException;
 public class GitHubClient {
 
     private final RestClient restClient;
+    private final ScrapperMetrics metrics;
 
-    @Retry(name = "external")
+    @Retry(name = "external-exponent")
+    @CircuitBreaker(name = "external")
     public List<GitHubIssueResponse> fetchRepo(String owner, String repo, OffsetDateTime since, int page, int perPage)
             throws GitHubClientException {
+        long start = System.currentTimeMillis();
         try {
             List<GitHubIssueResponse> response = restClient
                     .get()
@@ -31,7 +36,7 @@ public class GitHubClient {
                             .queryParam("page", page)
                             .build(owner, repo))
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, res) -> {
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, res) -> {
                         throw new GitHubClientException("GitHub API error: " + res.getStatusCode());
                     })
                     .body(new ParameterizedTypeReference<>() {});
@@ -43,10 +48,15 @@ public class GitHubClient {
 
             ClientRequestLogging.handleRequestSuccess("Успешный запрос в github", "github_request", "success");
             return response;
-
+        } catch (org.springframework.web.client.HttpServerErrorException
+                | org.springframework.web.client.ResourceAccessException e) {
+            ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
+            throw e;
         } catch (RestClientException e) {
             ClientRequestLogging.handleRequestFailure("Неудачный запрос в github", "github_request", "failure", e);
             throw new GitHubClientException("Github API error: " + e.getMessage());
+        } finally {
+            metrics.recordRequestDuration(System.currentTimeMillis() - start, "external_source", "github.com");
         }
     }
 }

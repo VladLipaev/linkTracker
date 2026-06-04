@@ -1,7 +1,8 @@
 package backend.academy.linktracker.scrapper.service.kafka;
 
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
-import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
+import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
 import backend.academy.linktracker.scrapper.entity.OutBoxMessage;
 import backend.academy.linktracker.scrapper.repository.outbox.OutBoxRepository;
 import java.nio.charset.StandardCharsets;
@@ -29,10 +30,11 @@ import tools.jackson.databind.ObjectMapper;
 public class KafkaOutboxBatcher {
 
     private final OutBoxRepository outBoxRepository;
-    private final KafkaTemplate<String, LinkUpdateAvro> kafkaTemplate;
+    private final KafkaTemplate<String, RawLinkUpdateAvro> kafkaTemplate;
     private final NewTopic newTopic;
     private final ObjectMapper objectMapper;
     private final LinkUpdateToAvroMapper mapper;
+    private final ScrapperMetrics metrics;
 
     @Value("${app.kafka.outbox.batch-send-size:500}")
     private Integer BATCH_SEND_SIZE;
@@ -52,13 +54,15 @@ public class KafkaOutboxBatcher {
         Map<UUID, Throwable> results = new ConcurrentHashMap<>();
 
         for (OutBoxMessage message : messages) {
-            LinkUpdate payload = objectMapper.readValue(message.getPayload(), LinkUpdate.class);
-            LinkUpdateAvro linkUpdateAvro = mapper.linkUpdateAvro(payload);
-            ProducerRecord<String, LinkUpdateAvro> record =
-                    new ProducerRecord<>(newTopic.name(), message.getPartitionKey(), linkUpdateAvro);
+            LinkUpdate linkUpdate = objectMapper.readValue(message.getPayload(), LinkUpdate.class);
+            RawLinkUpdateAvro rawLinkUpdateAvro = mapper.rawLinkUpdateAvro(linkUpdate);
+            ProducerRecord<String, RawLinkUpdateAvro> record =
+                    new ProducerRecord<>(newTopic.name(), message.getPartitionKey(), rawLinkUpdateAvro);
             record.headers().add("event-id", message.getId().toString().getBytes(StandardCharsets.UTF_8));
-            CompletableFuture<SendResult<String, LinkUpdateAvro>> future = kafkaTemplate.send(record);
+            long start = System.currentTimeMillis();
+            CompletableFuture<SendResult<String, RawLinkUpdateAvro>> future = kafkaTemplate.send(record);
             future.whenComplete((result, ex) -> {
+                metrics.recordRequestDuration(System.currentTimeMillis() - start, "kafka", "producer");
                 if (ex != null) {
                     results.put(message.getId(), ex);
                 }

@@ -27,9 +27,9 @@ public class BotRestControllerRateLimiterTest extends AbstractIntegrationTest {
 
     @DynamicPropertySource
     static void handleProperties(DynamicPropertyRegistry registry) {
-        registry.add("resilience4j.ratelimiter.instances.api.limit-for-period", () -> 1);
-        registry.add("resilience4j.ratelimiter.instances.api.limit-refresh-period", () -> "10s");
-        registry.add("resilience4j.ratelimiter.instances.api.timeout-duration", () -> "0s");
+        registry.add("resilience4j.ratelimiter.configs.api.limit-for-period", () -> 1);
+        registry.add("resilience4j.ratelimiter.configs.api.limit-refresh-period", () -> "10s");
+        registry.add("resilience4j.ratelimiter.configs.api.timeout-duration", () -> "0s");
     }
 
     @Test

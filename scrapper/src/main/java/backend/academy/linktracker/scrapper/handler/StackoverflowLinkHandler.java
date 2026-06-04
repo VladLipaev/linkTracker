@@ -45,7 +45,7 @@ public class StackoverflowLinkHandler implements LinkHandler {
         boolean hasActualUpdates = false;
 
         var answers = stackOverflowClient.fetchAnswers(questionId, fromDateSec);
-        if (answers != null && answers.items() != null) {
+        if (answers != null && !answers.items().isEmpty()) {
             hasActualUpdates = true;
             for (var answer : answers.items()) {
                 appendUpdateText(messageBuilder, "Новый ответ", answer);
@@ -53,8 +53,8 @@ public class StackoverflowLinkHandler implements LinkHandler {
         }
         var comments = stackOverflowClient.fetchComments(questionId, fromDateSec);
         if (comments != null && comments.items() != null) {
+            hasActualUpdates = true;
             for (var comment : comments.items()) {
-                hasActualUpdates = true;
                 appendUpdateText(messageBuilder, "Новый комментарий", comment);
             }
         }
@@ -67,7 +67,6 @@ public class StackoverflowLinkHandler implements LinkHandler {
 
     private void appendUpdateText(StringBuilder sb, String type, StackOverflowResponse.ActivityItem item) {
         String safeBody = (item.body() != null) ? item.body().replaceAll("<[^>]*>", "") : "";
-        String preview = safeBody.length() > 200 ? safeBody.substring(0, 200) + "..." : safeBody;
 
         sb.append("**")
                 .append(type)
@@ -75,6 +74,6 @@ public class StackoverflowLinkHandler implements LinkHandler {
                 .append(item.owner().displayName())
                 .append("\n");
         sb.append("Время: ").append(item.getCreationDateFormatted()).append("\n");
-        sb.append("Превью: ").append(preview).append("\n\n");
+        sb.append("Сообщение: ").append(safeBody).append("\n\n");
     }
 }

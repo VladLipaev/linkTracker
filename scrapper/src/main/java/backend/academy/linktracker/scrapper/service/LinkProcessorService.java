@@ -27,7 +27,7 @@ public class LinkProcessorService {
 
     private final List<LinkHandler> linkHandlers;
     private final LinksRepository linksRepository;
-    private final SyncNotificationUpdateSender updateSender;
+    private final NotificationUpdateSender updateSender;
     private final TransactionTemplate transactionTemplate;
 
     @Value("${app.client.batch-size}")

@@ -1,0 +1,148 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  application:
+    name: bot
+  grpc:
+    server:
+      port: 9080
+    client:
+      default-channel:
+        address: 'static://localhost:9081'
+        negotiation-type: plaintext
+  kafka:
+    bootstrap-servers: broker-1:9092,broker-2:9092,broker-3:9092
+app:
+  telegram:
+    url: https://api.telegram.org/bot
+    token: ${APP_TELEGRAM_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
+    update-listener-sleep: 1s
+    debug: false
+  scrapper:
+    uri: http://scrapper:8081
+  communication:
+    client:
+      mode: rest # rest
+      connect-timeout: 5s
+      read-timeout: 10s
+      kafka-fallback:
+        topic:
+          chat-reg: chat-registration-topic
+          link-add: link-add-topic
+          link-remove: link-remove-topic
+    controller:
+      mode: rest #grpc, rest
+  kafka:
+    retry:
+      attempts: 3
+      interval: 3000
+    concurrency: 3
+    schema-registry: http://schema-registry:9093
+    consumer:
+      group-id: "bot-fresh-group-v1"
+    topic:
+      name: link.processed-updates
+  rate-limiter:
+    api:
+      caffeine:
+        expire-time: 5m
+        size: 10000
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
+  level:
+    root: INFO
+    org:
+      springframework:
+        kafka: DEBUG
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      scrapper:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 10s
+        max-wait-duration-in-half-open-state: 1s
+        record-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpClientErrorException.TooManyRequests
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException.BadRequest
+          - org.springframework.web.client.HttpClientErrorException.Unauthorized
+          - org.springframework.web.client.HttpClientErrorException.Forbidden
+          - org.springframework.web.client.HttpClientErrorException.NotFound
+          - org.springframework.web.client.HttpClientErrorException.Conflict
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+    circuit-breaker-aspect-order: 398
+  retry:
+    instances:
+      scrapper:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: false
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+      scrapper-exponent:
+        max-attempts: 3
+        wait-duration: 3s
+        enable-randomized-wait: true
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - backend.academy.linktracker.bot.client.scrapper.ScrapperClientException
+    retry-aspect-order: 399
+  ratelimiter:
+    instances:
+      scrapper:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+    rate-limiter-aspect-order: 397
+    configs:
+      api:
+        limit-for-period: 100
+        limit-refresh-period: 1s
+        timeout-duration: 5s
+
+management:
+  server:
+    port: 8011
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus,health
+      path-mapping:
+        prometheus: metrics
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true

@@ -10,8 +10,7 @@ import org.testcontainers.utility.DockerImageName;
 @Disabled
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
-
-    // Uncomment to start PostgreSQLContainer
+    // Uncomment to start PostgreSQLContainer ok
     // @Bean
     // @ServiceConnection
     PostgreSQLContainer postgresContainer() {

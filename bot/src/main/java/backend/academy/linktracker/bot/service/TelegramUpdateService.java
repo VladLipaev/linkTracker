@@ -1,6 +1,7 @@
 package backend.academy.linktracker.bot.service;
 
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
+import backend.academy.linktracker.bot.configuration.metrics.BotMetrics;
 import backend.academy.linktracker.bot.dto.LinkUpdate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -9,11 +10,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TelegramUpdateService {
     private final TelegramClientFacade telegramClientFacade;
+    private final BotMetrics metrics;
 
     public void postUpdate(LinkUpdate linkUpdate) {
-        String message = "Обновление по ссылке: " + linkUpdate.url() + "\n" + linkUpdate.description();
+        String message = "Обновления: " + "\n" + linkUpdate.description();
         for (Long chatId : linkUpdate.tgChatIds()) {
             telegramClientFacade.sendMessage(chatId, message);
+            metrics.incrementSentNotification();
         }
     }
 }

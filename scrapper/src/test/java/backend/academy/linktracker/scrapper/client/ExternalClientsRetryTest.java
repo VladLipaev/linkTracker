@@ -1,38 +1,40 @@
-package backend.academy.linktracker.scrapper.client.bot;
+package backend.academy.linktracker.scrapper.client;
 
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
 import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
 import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
 import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
 import backend.academy.linktracker.scrapper.config.KafkaConfiguration;
 import backend.academy.linktracker.scrapper.config.TestBeans;
-import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
 @WireMockTest(httpPort = 54321)
 @Import({TestBeans.class, KafkaConfiguration.class})
-public class BotClientRetryTest {
+@ActiveProfiles("test-external-constant-backoff")
+public class ExternalClientsRetryTest {
 
     static {
         POSTGRES.start();
@@ -42,15 +44,21 @@ public class BotClientRetryTest {
     }
 
     @Autowired
-    private TelegramBotClient botClient;
+    private GitHubClient gitHubClient;
+
+    @Autowired
+    private StackOverflowClient stackOverflowClient;
 
     @DynamicPropertySource
     static void handleProperties(DynamicPropertyRegistry registry) {
-        registry.add("resilience4j.retry.instances.bot.wait-duration", () -> "500ms");
+        registry.add("resilience4j.retry.instances.external-exponent.wait-duration", () -> "500ms");
+        registry.add("resilience4j.retry.instances.external-exponent.max-attempts", () -> 3);
         registry.add("app.communication.client.read-timeout", () -> Duration.ofSeconds(1));
-        registry.add("resilience4j.retry.instances.bot.max-attempts", () -> 3);
-        registry.add("app.bot.uri", () -> "http://localhost:54321");
-        registry.add("resilience4j.circuitbreaker.instances.bot.enabled", () -> false);
+
+        registry.add("app.github.base-url", () -> "http://localhost:54321");
+        registry.add("app.stackoverflow.base-url", () -> "http://localhost:54321");
+        registry.add("app.stackoverflow.key", () -> "test-key");
+
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
                 "app.kafka.schema-registry",
@@ -59,92 +67,120 @@ public class BotClientRetryTest {
     }
 
     @Test
-    public void TC2_1_2TimesReturn500_LastTimeReturns200() {
+    public void TC1_GitHub_2TimesReturn500_LastTimeReturns200() {
         // given
-        LinkUpdate update = new LinkUpdate(1L, "https://example.com", "desc", List.of(100L));
-        String scenarioName = "retry500";
+        String owner = "owner";
+        String repo = "repo";
+        String scenarioName = "github_retry500";
+        String path = "/repos/owner/repo/issues";
 
-        stubFor(post(urlEqualTo("/updates"))
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("first failure"));
 
-        stubFor(post(urlEqualTo("/updates"))
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("first failure")
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("second failure"));
 
-        stubFor(post(urlEqualTo("/updates"))
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("second failure")
-                .willReturn(aResponse().withStatus(200)));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("[]")));
 
         // when
-        botClient.sendUpdate(update);
+        gitHubClient.fetchRepo(owner, repo, OffsetDateTime.now(), 1, 50);
 
         // then
-        WireMock.verify(3, postRequestedFor(urlEqualTo("/updates")));
+        WireMock.verify(3, getRequestedFor(urlPathEqualTo(path)));
     }
 
     @Test
-    public void TC2_2_400Error_NoRetry() {
+    public void TC2_GitHub_400Error_NoRetry() {
         // given
-        LinkUpdate update = new LinkUpdate(1L, "https://example.com", "desc", List.of(100L));
-        String scenarioName = "retry400";
+        String path = "/repos/owner/repo/issues";
 
-        stubFor(post(urlEqualTo("/updates"))
-                .inScenario(scenarioName)
-                .whenScenarioStateIs(Scenario.STARTED)
-                .willReturn(aResponse().withStatus(400))
-                .willSetStateTo("first failure"));
+        stubFor(get(urlPathEqualTo(path)).willReturn(aResponse().withStatus(404)));
 
-        stubFor(post(urlEqualTo("/updates"))
-                .inScenario(scenarioName)
-                .whenScenarioStateIs("first failure")
-                .willReturn(aResponse().withStatus(401))
-                .willSetStateTo("second failure"));
-
-        stubFor(post(urlEqualTo("/updates"))
-                .inScenario(scenarioName)
-                .whenScenarioStateIs("second failure")
-                .willReturn(aResponse().withStatus(404)));
-
-        // when (бизнес ошибки не перехватываются фолбеком, так как это не Throwable, а фильтруемые в ignoreExceptions)
-        Throwable thrown = catchThrowable(() -> botClient.sendUpdate(update));
+        // when
+        Throwable thrown = catchThrowable(() -> gitHubClient.fetchRepo("owner", "repo", OffsetDateTime.now(), 1, 50));
 
         // then
-        assertThat(thrown).isInstanceOf(BotClientException.class).hasMessageContaining("Ошибка клиента: ");
-        WireMock.verify(1, postRequestedFor(urlEqualTo("/updates")));
+        assertThat(thrown).isInstanceOf(GitHubClientException.class);
+        WireMock.verify(1, getRequestedFor(urlPathEqualTo(path)));
     }
 
     @Test
-    public void TC2_3_VerifyRetryIntervalIsConstant() {
+    public void TC3_StackOverflow_2TimesReturn500_LastTimeReturns200() {
         // given
-        LinkUpdate update = new LinkUpdate(1L, "https://example.com", "desc", List.of(100L));
-        String scenarioName = "constant_interval";
+        String questionId = "123";
+        String scenarioName = "so_retry500";
+        String path = "/questions/123";
 
-        stubFor(post(urlEqualTo("/updates"))
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs(Scenario.STARTED)
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("first failure"));
-        stubFor(post(urlEqualTo("/updates"))
+
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("first failure")
                 .willReturn(aResponse().withStatus(500))
                 .willSetStateTo("second failure"));
-        stubFor(post(urlEqualTo("/updates"))
+
+        stubFor(get(urlPathEqualTo(path))
                 .inScenario(scenarioName)
                 .whenScenarioStateIs("second failure")
-                .willReturn(aResponse().withStatus(200)));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{}")));
 
         // when
-        botClient.sendUpdate(update);
+        stackOverflowClient.fetchQuestion(questionId);
 
         // then
-        List<LoggedRequest> requests = WireMock.findAll(postRequestedFor(urlEqualTo("/updates")));
+        WireMock.verify(3, getRequestedFor(urlPathEqualTo(path)));
+    }
+
+    @Test
+    public void TC4_StackOverflow_VerifyRetryIntervalIsConstant() {
+        // given
+        String path = "/questions/123/answers";
+        String scenarioName = "so_constant_interval";
+
+        stubFor(get(urlPathEqualTo(path))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("first failure"));
+
+        stubFor(get(urlPathEqualTo(path))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("first failure")
+                .willReturn(aResponse().withStatus(500))
+                .willSetStateTo("second failure"));
+
+        stubFor(get(urlPathEqualTo(path))
+                .inScenario(scenarioName)
+                .whenScenarioStateIs("second failure")
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{}")));
+
+        // when
+        stackOverflowClient.fetchAnswers("123", 1600000000L);
+
+        // then
+        List<LoggedRequest> requests = WireMock.findAll(getRequestedFor(urlPathEqualTo(path)));
         assertThat(requests).hasSize(3);
 
         long time1 = requests.get(0).getLoggedDate().getTime();

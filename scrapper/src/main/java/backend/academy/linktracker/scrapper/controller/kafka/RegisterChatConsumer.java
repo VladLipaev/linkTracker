@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.controller.kafka;
 
 import backend.academy.linktracker.bot.dto.avro.RegisterChatAvro;
+import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.service.TgChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Controller;
 public class RegisterChatConsumer {
 
     private final TgChatService tgChatService;
+    private final ScrapperMetrics metrics;
 
     @KafkaListener(topics = "${app.kafka.consumers.topic.chat-reg}")
     public void listen(RegisterChatAvro registerChatAvro) {
+        long start = System.currentTimeMillis();
         long chatId = registerChatAvro.getChatId();
 
         try {
@@ -28,7 +31,7 @@ public class RegisterChatConsumer {
                     .log();
         } catch (DataAccessException e) {
             log.atError()
-                    .setMessage("Ошибка обработки сообщения: нет доступа к бд")
+                    .setMessage("Ошибка обработки регистрации чата: нет доступа к бд")
                     .addKeyValue("chatId", chatId)
                     .addKeyValue("error", e.getMessage())
                     .log();
@@ -40,6 +43,8 @@ public class RegisterChatConsumer {
                     .addKeyValue("error", e.getMessage())
                     .log();
             throw e;
+        } finally {
+            metrics.recordRequestDuration(System.currentTimeMillis() - start, "kafka", "consumer");
         }
     }
 }

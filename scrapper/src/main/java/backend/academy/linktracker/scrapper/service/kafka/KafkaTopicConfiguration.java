@@ -26,7 +26,7 @@ public class KafkaTopicConfiguration {
 
     @Bean
     public NewTopic newTopic(
-            @Value("${app.kafka.topic.name:bot-updates-topic}") String topicName,
+            @Value("${app.kafka.topic.name:link.raw-updates}") String topicName,
             @Value("${app.kafka.topic.partitions:3}") int partitions,
             @Value("${app.kafka.min-insync-replicas:2}") int inSync,
             @Value("${app.kafka.topic.replicas:3}") int replicas) {
