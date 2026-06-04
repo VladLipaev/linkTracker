@@ -50,7 +50,7 @@ app:
     max-pages: 100
   communication:
     client:
-      mode: rest # rest, grpc
+      mode: kafka # rest, grpc
       connect-timeout: 5s
       read-timeout: 10s
     controller:
@@ -64,7 +64,7 @@ app:
   kafka:
     schema-registry: http://localhost:9093
     topic:
-      name: bot-updates-topic
+      name: link.raw-updates
       partitions: 3
       replicas: 3
     send-delay: 60s

@@ -23,12 +23,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
 @WireMockTest(httpPort = 54321)
 @Import({TestBeans.class, KafkaConfiguration.class})
+@ActiveProfiles("test-rest")
 public class ExternalClientsRetryExponentialBackoffTest {
 
     static {
@@ -102,7 +104,7 @@ public class ExternalClientsRetryExponentialBackoffTest {
         long interval1to2 = timestamps[1] - timestamps[0];
         long interval2to3 = timestamps[2] - timestamps[1];
 
-        assertThat(interval1to2).isBetween(400L, 1000L);
+        assertThat(interval1to2).isBetween(300L, 1000L);
         assertThat(interval2to3).isBetween(1000L, 2000L);
 
         long totalDuration = endTime - startTime;

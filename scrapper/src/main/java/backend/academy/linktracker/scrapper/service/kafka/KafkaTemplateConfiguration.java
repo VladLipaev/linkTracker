@@ -1,6 +1,6 @@
 package backend.academy.linktracker.scrapper.service.kafka;
 
-import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
+import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ public class KafkaTemplateConfiguration {
     private String schemaRegistry;
 
     @Bean
-    public ProducerFactory<String, LinkUpdateAvro> producerFactory() {
+    public ProducerFactory<String, RawLinkUpdateAvro> producerFactory() {
         Map<String, Object> prodConf = new HashMap<>();
         prodConf.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         prodConf.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -42,7 +42,7 @@ public class KafkaTemplateConfiguration {
     }
 
     @Bean
-    public KafkaTemplate<String, LinkUpdateAvro> kafkaTemplate() {
+    public KafkaTemplate<String, RawLinkUpdateAvro> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }
