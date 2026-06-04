@@ -9,6 +9,7 @@ import io.lettuce.core.resource.MappingSocketAddressResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
@@ -21,11 +22,18 @@ public class CacheConfiguration {
     public String host;
 
     @Bean(destroyMethod = "shutdown")
+    @Profile("!docker")
     public ClientResources lettuceClientResources() {
         return DefaultClientResources.builder()
                 .socketAddressResolver(MappingSocketAddressResolver.create(
                         DnsResolvers.JVM_DEFAULT, hostAndPort -> HostAndPort.of(host, hostAndPort.getPort())))
                 .build();
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    @Profile("docker")
+    public ClientResources lettuceClientResourcesDocker() {
+        return DefaultClientResources.create();
     }
 
     @Bean
