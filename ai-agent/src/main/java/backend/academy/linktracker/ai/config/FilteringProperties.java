@@ -1,6 +1,5 @@
 package backend.academy.linktracker.ai.config;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,4 +8,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record FilteringProperties(
         @NotNull List<String> stopWords,
         @NotNull List<String> excludedAuthors,
-        @Min(250) Integer minLength) {}
+        @NotNull Integer minLength) {}

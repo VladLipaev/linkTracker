@@ -46,7 +46,7 @@ app:
     consumer:
       group-id: "bot-fresh-group-v1"
     topic:
-      name: bot-updates-topic
+      name: link.processed-updates
   rate-limiter:
     api:
       caffeine:

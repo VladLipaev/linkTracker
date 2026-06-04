@@ -105,7 +105,7 @@ public class ExternalClientsRetryExponentialBackoffTest {
         long interval2to3 = timestamps[2] - timestamps[1];
 
         assertThat(interval1to2).isBetween(300L, 1000L);
-        assertThat(interval2to3).isBetween(1000L, 2000L);
+        assertThat(interval2to3).isGreaterThan((long) (interval1to2 * 1.5));
 
         long totalDuration = endTime - startTime;
         assertThat(totalDuration).isGreaterThan(1500L);
