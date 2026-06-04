@@ -60,3 +60,5 @@ bot/.env
 
 ### db_files ###
 /my_db_files
+
+.git-backup
