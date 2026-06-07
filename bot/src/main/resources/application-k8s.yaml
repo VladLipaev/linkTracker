@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-db-svc:5432/${POSTGRES_DB:postgres}?reWriteBatchedInserts=true
+  kafka:
+    bootstrap-servers: kafka-0.kafka-hs:9092,kafka-1.kafka-hs:9092,kafka-2.kafka-hs:9092
+app:
+  kafka:
+    schema-registry: http://schema-registry-svc:9093
+  scrapper:
+    uri: http://scrapper-svc:8081
+management:
+  server:
+    port: 8011
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus,health
+      path-mapping:
+        prometheus: metrics
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+    export:
+      prometheus:
+        pushgateway:
+          enabled: true
+          base-url: http://pushgateway-svc:9091
+          push-rate: 30s
+          job: ${spring.application.name}
+  health:
+    kafka:
+      enabled: false
+    redis:
+      enabled: false
+    db:
+      enabled: true

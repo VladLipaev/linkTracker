@@ -198,7 +198,12 @@ services:
       $$(getent hosts valkey-node-6 | awk '{ print $$1 }'):7006
       --cluster-replicas 1 --cluster-yes || echo 'Кластер уже инициализирован!'"
   scrapper:
-    build: ./scrapper
+    build:
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: scrapper/target/scrapper-0.0.1-exec.jar
+      tags:
+        - localhost:5000/linktracker/scrapper:0.0.1
     container_name: scrapper
     ports:
       - "8081:8081"
@@ -212,6 +217,7 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
+      - valkey-cluster-init
       - postgresql
       - broker-1
       - broker-2
@@ -224,7 +230,12 @@ services:
     ports:
       - "9091:9091"
   bot:
-    build: ./bot
+    build:
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: bot/target/bot-0.0.1-exec.jar
+      tags:
+        - localhost:5000/linktracker/bot:0.0.1
     container_name: bot
     ports:
       - "8080:8080"
@@ -238,6 +249,33 @@ services:
     depends_on:
       - postgresql
       - scrapper
+      - broker-1
+      - broker-2
+      - broker-3
+    networks:
+      - default
+  ai-agent:
+    build:
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: ai-agent/target/ai-agent-0.0.1-exec.jar
+      tags:
+        - localhost:5000/linktracker/ai-agent:0.0.1
+    container_name: ai-agent
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - YANDEXGPT_API_KEY=${YANDEXGPT_API_KEY}
+      - YANDEXGPT_FOLDER_ID=${YANDEXGPT_FOLDER_ID}
+    depends_on:
+      - postgresql
+      - broker-1
+      - broker-2
+      - broker-3
     networks:
       - default
   prometheus:

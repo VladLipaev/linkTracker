@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-db-svc:5432/${POSTGRES_DB:postgres}?reWriteBatchedInserts=true
+  kafka:
+    bootstrap-servers: kafka-0.kafka-hs:9092,kafka-1.kafka-hs:9092,kafka-2.kafka-hs:9092
+app:
+  kafka:
+    schema-registry: http://schema-registry-svc:9093
