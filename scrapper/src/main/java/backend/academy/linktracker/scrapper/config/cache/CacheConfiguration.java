@@ -22,7 +22,7 @@ public class CacheConfiguration {
     public String host;
 
     @Bean(destroyMethod = "shutdown")
-    @Profile("!docker")
+    @Profile({"!docker & !k8s"})
     public ClientResources lettuceClientResources() {
         return DefaultClientResources.builder()
                 .socketAddressResolver(MappingSocketAddressResolver.create(
@@ -31,7 +31,7 @@ public class CacheConfiguration {
     }
 
     @Bean(destroyMethod = "shutdown")
-    @Profile("docker")
+    @Profile({"docker | k8s"})
     public ClientResources lettuceClientResourcesDocker() {
         return DefaultClientResources.create();
     }

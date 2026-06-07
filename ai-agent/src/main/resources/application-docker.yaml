@@ -1,0 +1,75 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgresql:5432/${POSTGRES_DB:postgres}?reWriteBatchedInserts=true
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  application:
+    name: ai-agent
+  kafka:
+    bootstrap-servers: broker-1:9092,broker-2:9092,broker-3:9092
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+app:
+  kafka:
+    schema-registry: http://schema-registry:9093
+    consumer:
+      retry:
+        attempts: 3
+        interval: 3000
+      concurrency: 3
+      group-id: "agent-fresh-group-v1"
+      topic:
+        name: link.raw-updates
+    producer:
+      send-delay: 60s
+      topic:
+        name: link.processed-updates
+        partitions: 3
+        replicas: 3
+      outbox:
+        max-retries: 5
+        delay: 120s
+        max-batches: 10
+        batch-send-size: 500
+        batch-clean-size: 5000
+        batch-take-size: 5000
+      min-insync-replicas: 2
+  filtering:
+    stop-words:
+      - spam
+      - ads
+      - promo
+    excluded-authors:
+      - self
+    min-length: 250
+  summarization:
+    threshold: 500
+  yandexgpt:
+    api-key: ${YANDEXGPT_API_KEY}
+    folder-id: ${YANDEXGPT_FOLDER_ID}
+    uri: https://llm.api.cloud.yandex.net
+  prioritization:
+    high-keywords:
+      - critical
+      - urgent
+      - breaking
+      - security
+    low-keywords:
+      - minor
+      - typo
+      - chore
+      - docs
+  grouping:
+    window-ms: 30000
+
+logging:
+  level:
+    org.hibernate: DEBUG

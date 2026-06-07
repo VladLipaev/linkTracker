@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: liquibase-migration
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: [ 'sh', '-c', 'until nc -z postgres-db-svc 5432; do echo waiting for postgres; sleep 2; done' ]
+      containers:
+        - name: liquibase
+          image: linktracker/liquibase-migrations:0.0.1
+          command:
+            - liquibase
+          args:
+            - --log-level=debug
+            - --searchPath=/changesets
+            - --changelog-file=db.changelog-master.xml
+            - --driver=org.postgresql.Driver
+            - --url=jdbc:postgresql://postgres-db-svc:5432/postgres
+            - --username=postgres
+            - --password=postgres
+            - update
