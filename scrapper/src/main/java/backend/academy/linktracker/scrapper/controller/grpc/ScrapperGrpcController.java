@@ -15,6 +15,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Controller;
+import java.net.URI;
 
 @Controller
 @RequiredArgsConstructor
@@ -43,13 +44,16 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
     @Override
     public void addLink(AddLinkRequest request, StreamObserver<LinkResponse> responseObserver) {
         var dtoRequest =
-                new backend.academy.linktracker.scrapper.dto.AddLinkRequest(request.getLink(), request.getTagsList());
+                backend.academy.linktracker.scrapper.dto.AddLinkRequest
+                    .builder()
+                    .link(URI.create(request.getLink()))
+                    .tags(request.getTagsList()).build();
         var result = linksService.addLink(request.getChatId(), dtoRequest);
 
         LinkResponse response = LinkResponse.newBuilder()
-                .setId(result.id())
-                .setUrl(result.url())
-                .addAllTags(result.tags())
+                .setId(result.getId())
+                .setUrl(String.valueOf(result.getUrl()))
+                .addAllTags(result.getTags())
                 .build();
 
         responseObserver.onNext(response);
@@ -62,13 +66,13 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
         var result = linksService.getLinks(request.getChatId(), tag);
 
         ListLinksResponse.Builder responseBuilder =
-                ListLinksResponse.newBuilder().setSize(result.size());
+                ListLinksResponse.newBuilder().setSize(result.getSize());
 
-        result.links()
+        result.getLinks()
                 .forEach(link -> responseBuilder.addLinks(LinkResponse.newBuilder()
-                        .setId(link.id())
-                        .setUrl(link.url())
-                        .addAllTags(link.tags())
+                        .setId(link.getId())
+                        .setUrl(String.valueOf(link.getUrl()))
+                        .addAllTags(link.getTags())
                         .build()));
 
         responseObserver.onNext(responseBuilder.build());
@@ -78,12 +82,15 @@ public class ScrapperGrpcController extends ScrapperServiceGrpc.ScrapperServiceI
     @Override
     public void removeLink(RemoveLinkRequest request, StreamObserver<LinkResponse> responseObserver) {
         var result = this.linksService.removeLink(
-                request.getChatId(), new backend.academy.linktracker.scrapper.dto.RemoveLinkRequest(request.getLink()));
+                request.getChatId(), backend.academy.linktracker.scrapper.dto.RemoveLinkRequest
+                .builder()
+                .link(URI.create(request.getLink()))
+                .build());
 
         LinkResponse response = LinkResponse.newBuilder()
-                .setId(result.id())
-                .setUrl(result.url())
-                .addAllTags(result.tags())
+                .setId(result.getId())
+                .setUrl(String.valueOf(result.getUrl()))
+                .addAllTags(result.getTags())
                 .build();
 
         responseObserver.onNext(response);

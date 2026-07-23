@@ -13,6 +13,7 @@ import backend.academy.linktracker.scrapper.handler.LinkValidator;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.repository.SubscriptionRepository;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
+import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,20 +55,27 @@ public class DefaultLinksService implements LinksService {
         if (tag == null) {
             List<Link> links = chat.getLinks();
             if (links.isEmpty()) {
-                response = new ListLinksResponse(List.of(), 0);
+                response = ListLinksResponse.builder().links(List.of()).size(0).build();
             } else {
                 List<LinkResponse> linkResponses = links.stream()
-                        .map(link -> new LinkResponse(link.getId(), link.getUrl(), List.of()))
+                        .map(link -> LinkResponse
+                            .builder()
+                            .id(link.getId())
+                            .url(URI.create(link.getUrl()))
+                            .tags(List.of()).build())
                         .toList();
-                response = new ListLinksResponse(linkResponses, linkResponses.size());
+                response = ListLinksResponse.builder().links(linkResponses).size(linkResponses.size()).build();
             }
         } else {
             List<Subscription> subscriptions = subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag);
             List<LinkResponse> linkResponses = subscriptions.stream()
-                    .map(sub -> new LinkResponse(
-                            sub.getLink().getId(), sub.getLink().getUrl(), sub.getTags()))
+                    .map(sub -> LinkResponse.builder()
+                            .id(sub.getLink().getId())
+                            .url(URI.create(sub.getLink().getUrl()))
+                                .tags(sub.getTags()
+                            ).build())
                     .toList();
-            response = new ListLinksResponse(linkResponses, linkResponses.size());
+            response = ListLinksResponse.builder().links(linkResponses).size(linkResponses.size()).build();
         }
 
         return response;
@@ -80,13 +88,13 @@ public class DefaultLinksService implements LinksService {
         Chat chat = tgChatRepository
                 .findById(chatId)
                 .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
-        String url = request.link();
+        String url = String.valueOf(request.getLink());
         if (!linkValidator.isValid(url)) {
             throw new UnsupportedLinkException("Ссылка не поддерживается.");
         }
 
         if (linksRepository.findByChatIdAndUrl(chatId, url).isPresent()) {
-            throw new LinkAlreadyExistsException("Ссылка %s для чата уже существует".formatted(request.link()));
+            throw new LinkAlreadyExistsException("Ссылка %s для чата уже существует".formatted(String.valueOf(request.getLink())));
         }
         Link savedLink;
         Optional<Link> existingLink = linksRepository.findByUrl(url);
@@ -103,14 +111,14 @@ public class DefaultLinksService implements LinksService {
         Subscription subscription = new Subscription(chatId, savedLink.getId());
         subscription.setChat(chat);
         subscription.setLink(savedLink);
-        List<String> tags = request.tags();
+        List<String> tags = request.getTags();
         if (!tags.isEmpty()) {
-            subscription.setTags(request.tags());
+            subscription.setTags(request.getTags());
         }
         subscriptionRepository.save(subscription);
         String domain = extractDomain(url);
         metrics.incrementLinks(domain);
-        return new LinkResponse(savedLink.getId(), savedLink.getUrl(), tags);
+        return LinkResponse.builder().id(savedLink.getId()).url(URI.create(savedLink.getUrl())).tags(tags).build();
     }
 
     @Override
@@ -121,13 +129,13 @@ public class DefaultLinksService implements LinksService {
             throw new ChatNotFoundException("Чат не зарегистрирован");
         }
 
-        if (!linkValidator.isValid(removeLinkRequest.link())) {
+        if (!linkValidator.isValid(String.valueOf(removeLinkRequest.getLink()))){
             throw new UnsupportedLinkException("Ссылка не поддерживается.");
         }
         Link link = linksRepository
-                .findByChatIdAndUrl(chatId, removeLinkRequest.link())
+                .findByChatIdAndUrl(chatId, String.valueOf(removeLinkRequest.getLink()))
                 .orElseThrow(
-                        () -> new NoSuchElementException("Cсылка %s не найдена".formatted(removeLinkRequest.link())));
+                        () -> new NoSuchElementException("Cсылка %s не найдена".formatted(removeLinkRequest.getLink())));
 
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
         Slice<String> sliceTags = subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), pageable);
@@ -142,9 +150,9 @@ public class DefaultLinksService implements LinksService {
         if (!subscriptionRepository.existsByLinkId(link.getId())) {
             linksRepository.deleteById(link.getId());
         }
-        String domain = extractDomain(removeLinkRequest.link());
+        String domain = extractDomain(String.valueOf(removeLinkRequest.getLink()));
         metrics.decrementLinks(domain);
-        return new LinkResponse(link.getId(), link.getUrl(), tags);
+        return LinkResponse.builder().id(link.getId()).url(URI.create(link.getUrl())).tags(tags).build();
     }
 
     private String extractDomain(String url) {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -226,11 +227,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>backend.academy.link-tracker</groupId>
-            <artifactId>bot</artifactId>
-            <version>0.0.1</version>
-            <scope>test</scope>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>backend.academy.link-tracker</groupId>-->
+<!--            <artifactId>bot</artifactId>-->
+<!--            <version>0.0.1</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
     </dependencies>
 
     <repositories>
@@ -251,6 +257,41 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-scrapper-api</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Переопределяем/дополняем параметры -->
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/scrapper-api.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <library>spring-boot</library>
+                            <apiPackage>backend.academy.linktracker.scrapper.api</apiPackage>   <!-- ваш пакет -->
+                            <modelPackage>backend.academy.linktracker.scrapper.dto</modelPackage>
+                            <invokerPackage>backend.academy.linktracker.scrapper.invoker</invokerPackage>
+                            <configOptions>
+                                <interfaceOnly>true</interfaceOnly>
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <documentationProvider>springdoc</documentationProvider>
+                                <useJakartaEe>true</useJakartaEe>
+                                <basePackage>backend.academy.linktracker.scrapper</basePackage>
+                                <useLombok>true</useLombok>
+                                <additionalModelTypeAnnotations>@lombok.Builder</additionalModelTypeAnnotations>
+                            </configOptions>
+                            <!-- Эти параметры можно задать, если они не определены в parent -->
+                            <generateApis>true</generateApis>
+                            <generateModels>true</generateModels>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

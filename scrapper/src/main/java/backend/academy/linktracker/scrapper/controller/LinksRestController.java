@@ -1,6 +1,9 @@
 package backend.academy.linktracker.scrapper.controller;
 
+import backend.academy.linktracker.scrapper.api.LinksApi;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
+import backend.academy.linktracker.scrapper.dto.LinkResponse;
+import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
 import backend.academy.linktracker.scrapper.dto.RemoveLinkRequest;
 import backend.academy.linktracker.scrapper.service.ScrapperLinksService;
 import jakarta.validation.Valid;
@@ -17,32 +20,47 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/links")
 @RequiredArgsConstructor
 @ConditionalOnProperty(
         prefix = "app.communication.controller",
         name = "mode",
         havingValue = "rest",
         matchIfMissing = true)
-public class LinksRestController {
+public class LinksRestController implements LinksApi {
 
     private final ScrapperLinksService linksService;
 
-    @GetMapping
-    public ResponseEntity<?> getAllLinks(
-            @RequestHeader("Tg-Chat-Id") Long chatId, @RequestParam(value = "tag", required = false) String tag) {
-        return ResponseEntity.ok().body(linksService.getLinks(chatId, tag));
+    @Override
+    public ResponseEntity<LinkResponse> linksDelete(Long tgChatId, RemoveLinkRequest removeLinkRequest) {
+        return ResponseEntity.ok(linksService.removeLink(tgChatId, removeLinkRequest));
     }
 
-    @PostMapping
-    public ResponseEntity<?> addLink(
-            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody AddLinkRequest addLinkRequest) {
-        return ResponseEntity.ok(this.linksService.addLink(chatId, addLinkRequest));
+    @Override
+    public ResponseEntity<ListLinksResponse> linksGet(Long tgChatId, String tag) {
+        return ResponseEntity.ok(linksService.getLinks(tgChatId, tag));
     }
 
-    @DeleteMapping
-    public ResponseEntity<?> removeLink(
-            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody RemoveLinkRequest removeLinkRequest) {
-        return ResponseEntity.ok(this.linksService.removeLink(chatId, removeLinkRequest));
+    @Override
+    public ResponseEntity<LinkResponse> linksPost(Long tgChatId, AddLinkRequest addLinkRequest) {
+        return ResponseEntity.ok(linksService.addLink(tgChatId, addLinkRequest));
     }
+
+
+    //    @GetMapping
+//    public ResponseEntity<?> getAllLinks(
+//            @RequestHeader("Tg-Chat-Id") Long chatId, @RequestParam(value = "tag", required = false) String tag) {
+//        return ResponseEntity.ok().body(linksService.getLinks(chatId, tag));
+//    }
+//
+//    @PostMapping
+//    public ResponseEntity<?> addLink(
+//            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody AddLinkRequest addLinkRequest) {
+//        return ResponseEntity.ok(this.linksService.addLink(chatId, addLinkRequest));
+//    }
+//
+//    @DeleteMapping
+//    public ResponseEntity<?> removeLink(
+//            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody RemoveLinkRequest removeLinkRequest) {
+//        return ResponseEntity.ok(this.linksService.removeLink(chatId, removeLinkRequest));
+//    }
 }
