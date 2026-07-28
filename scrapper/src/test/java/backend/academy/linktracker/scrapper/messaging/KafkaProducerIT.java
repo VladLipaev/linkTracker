@@ -1,20 +1,16 @@
 package backend.academy.linktracker.scrapper.messaging;
 
-import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
-import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
-import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
-import static org.assertj.core.api.Assertions.assertThat; // Обрати внимание, импорт изменен на общий Assertions
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import backend.academy.linktracker.scrapper.config.TestBeans;
+import backend.academy.linktracker.scrapper.AbstractIntegrationTest;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
 import backend.academy.linktracker.scrapper.entity.OutBoxMessage;
 import backend.academy.linktracker.scrapper.repository.outbox.OutBoxRepository;
 import backend.academy.linktracker.scrapper.service.NotificationUpdateSender;
-import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxBatcher;
 import backend.academy.linktracker.scrapper.service.kafka.KafkaOutboxWorker;
 import java.util.List;
 import java.util.Optional;
@@ -32,27 +28,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
-@SpringBootTest
-@Import(TestBeans.class)
-public class KafkaProducerIT {
-
-    static {
-        POSTGRES.start();
-        KAFKA_CONTAINER.start();
-        SCHEMA_REGISTRY.start();
-    }
-
-    @Autowired
-    private KafkaOutboxBatcher kafkaOutboxBatcher;
+public class KafkaProducerIT extends AbstractIntegrationTest {
 
     @Autowired
     private KafkaOutboxWorker kafkaOutboxWorker;
@@ -74,16 +56,6 @@ public class KafkaProducerIT {
     @Autowired
     private NotificationUpdateSender notificationUpdateSender;
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
-        registry.add(
-                "app.kafka.schema-registry",
-                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
-    }
 
     @BeforeEach
     void setUp() {

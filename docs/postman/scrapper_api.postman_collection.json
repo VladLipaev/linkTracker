@@ -1,0 +1,365 @@
+{
+    "info": {
+        "_postman_id": "scrapper-api-v1",
+        "name": "Scrapper API",
+        "description": "Интеграционная коллекция Postman для проверки Happy-Path и Error сценариев Scrapper API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "chatId",
+            "value": "12345",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "1. TG Chat API",
+            "item": [
+                {
+                    "name": "[Happy Path] Зарегистрировать чат",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/tg-chat/{{chatId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tg-chat",
+                                "{{chatId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 409] Чат уже зарегистрирован",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/tg-chat/{{chatId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tg-chat",
+                                "{{chatId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Happy Path] Удалить чат",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/tg-chat/{{chatId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tg-chat",
+                                "{{chatId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 404] Удаление несуществующего чата",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/tg-chat/999999",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tg-chat",
+                                "999999"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "2. Links API",
+            "item": [
+                {
+                    "name": "[Happy Path] Добавить ссылку",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://github.com/spring-projects/spring-boot\",\n  \"tags\": [\"java\", \"framework\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 409] Повторное добавление существующей ссылки",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://github.com/spring-projects/spring-boot\",\n  \"tags\": [\"java\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 400] Неподдерживаемая ссылка",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://unsupported-site.com/invalid\",\n  \"tags\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 404] Добавление ссылки незарегистрированным чатом",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "999999",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://github.com/spring-projects/spring-boot\",\n  \"tags\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Happy Path] Получить все ссылки чата",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Happy Path] Получить ссылки с фильтром по тегу",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/links?tag=java",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ],
+                            "query": [
+                                {
+                                    "key": "tag",
+                                    "value": "java"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 400] Отсутствует заголовок Tg-Chat-Id",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Happy Path] Удалить ссылку",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://github.com/spring-projects/spring-boot\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "[Error 404] Удаление отслеживания несуществующей ссылки",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Tg-Chat-Id",
+                                "value": "{{chatId}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"link\": \"https://github.com/non-existing/repo\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/links",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "links"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

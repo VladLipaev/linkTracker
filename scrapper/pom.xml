@@ -231,7 +231,13 @@
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.6</version>
         </dependency>
-<!--        <dependency>-->
+        <dependency>
+            <groupId>backend.academy.link-tracker</groupId>
+            <artifactId>bot</artifactId>
+            <version>0.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <!--        <dependency>-->
 <!--            <groupId>backend.academy.link-tracker</groupId>-->
 <!--            <artifactId>bot</artifactId>-->
 <!--            <version>0.0.1</version>-->

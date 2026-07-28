@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import backend.academy.linktracker.scrapper.config.TestBeans;
+import backend.academy.linktracker.scrapper.AbstractIntegrationTest;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.repository.orm.JpaLinksRepositoryInvoker;
 import backend.academy.linktracker.scrapper.repository.raw.SqlLinksRepository;
@@ -21,16 +21,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@Import(TestBeans.class)
 @Transactional
-public abstract class BaseLinksRepositoryTest {
+public abstract class BaseLinksRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private LinksRepository linksRepository;

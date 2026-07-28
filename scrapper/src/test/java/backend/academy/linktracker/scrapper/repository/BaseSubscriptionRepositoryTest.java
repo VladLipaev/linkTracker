@@ -2,7 +2,7 @@ package backend.academy.linktracker.scrapper.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import backend.academy.linktracker.scrapper.config.TestBeans;
+import backend.academy.linktracker.scrapper.AbstractIntegrationTest;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.entity.Subscription;
@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaAdmin;
@@ -31,10 +30,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@Import(TestBeans.class)
 @Transactional
-public abstract class BaseSubscriptionRepositoryTest {
+public abstract class BaseSubscriptionRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private SubscriptionRepository subscriptionRepository;

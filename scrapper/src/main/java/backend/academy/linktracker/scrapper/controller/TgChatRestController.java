@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.controller;
 
+import backend.academy.linktracker.scrapper.api.TgChatApi;
 import backend.academy.linktracker.scrapper.service.TgChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/tg-chat/{id}")
 @Slf4j
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -20,19 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
         name = "mode",
         havingValue = "rest",
         matchIfMissing = true)
-public class TgChatRestController {
+public class TgChatRestController implements TgChatApi {
 
     private final TgChatService tgChatService;
 
-    @PostMapping
-    public ResponseEntity<Void> registerChat(@PathVariable("id") Long id) {
-        tgChatService.addTgChat(id);
+    @Override
+    public ResponseEntity<Void> tgChatIdDelete(Long id) {
+        tgChatService.deleteTgChat(id);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> deleteChat(@PathVariable("id") Long id) {
-        tgChatService.deleteTgChat(id);
+    @Override
+    public ResponseEntity<Void> tgChatIdPost(Long id) {
+        tgChatService.addTgChat(id);
         return ResponseEntity.ok().build();
     }
 }
