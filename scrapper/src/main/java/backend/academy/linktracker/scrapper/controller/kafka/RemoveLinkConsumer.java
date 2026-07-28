@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Controller;
+import java.net.URI;
 
 @Controller
 @RequiredArgsConstructor
@@ -22,14 +23,16 @@ public class RemoveLinkConsumer {
     public void listen(RemoveLinkMessageAvro removeLinkMessageAvro) {
         long start = System.currentTimeMillis();
         long chatId = removeLinkMessageAvro.getChatId();
-        RemoveLinkRequest removeLinkRequest = new RemoveLinkRequest(removeLinkMessageAvro.getUrl());
+        RemoveLinkRequest removeLinkRequest = RemoveLinkRequest.builder()
+            .link(URI.create(removeLinkMessageAvro.getUrl()))
+            .build();
 
         try {
             linksService.removeLink(chatId, removeLinkRequest);
             log.atDebug()
                     .setMessage("удаление ссылки принято")
                     .addKeyValue("chatId", chatId)
-                    .addKeyValue("url", removeLinkRequest.link())
+                    .addKeyValue("url", removeLinkRequest.getLink())
                     .log();
         } catch (DataAccessException e) {
             log.atError()
