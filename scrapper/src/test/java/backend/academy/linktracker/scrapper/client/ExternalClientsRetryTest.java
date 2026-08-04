@@ -1,9 +1,5 @@
 package backend.academy.linktracker.scrapper.client;
 
-import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.KAFKA_CONTAINER;
-import static backend.academy.linktracker.scrapper.config.KafkaConfiguration.SCHEMA_REGISTRY;
-import static backend.academy.linktracker.scrapper.config.TestBeans.POSTGRES;
-import static backend.academy.linktracker.scrapper.config.TestBeans.VALKEY;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
@@ -13,8 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.withinPercentage;
 
-import backend.academy.linktracker.scrapper.config.KafkaConfiguration;
-import backend.academy.linktracker.scrapper.config.TestBeans;
+import backend.academy.linktracker.scrapper.AbstractIntegrationTest;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
@@ -25,23 +20,13 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-@SpringBootTest
 @WireMockTest(httpPort = 54321)
-@Import({TestBeans.class, KafkaConfiguration.class})
 @ActiveProfiles("test-external-constant-backoff")
-public class ExternalClientsRetryTest {
-
-    static {
-        POSTGRES.start();
-        KAFKA_CONTAINER.start();
-        SCHEMA_REGISTRY.start();
-        VALKEY.start();
-    }
+public class ExternalClientsRetryTest extends AbstractIntegrationTest {
 
     @Autowired
     private GitHubClient gitHubClient;
@@ -59,10 +44,6 @@ public class ExternalClientsRetryTest {
         registry.add("app.stackoverflow.base-url", () -> "http://localhost:54321");
         registry.add("app.stackoverflow.key", () -> "test-key");
 
-        registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
-        registry.add(
-                "app.kafka.schema-registry",
-                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
         registry.add("app.redis.time-to-live", () -> "2s");
     }
 

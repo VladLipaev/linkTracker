@@ -44,23 +44,4 @@ public class LinksRestController implements LinksApi {
     public ResponseEntity<LinkResponse> linksPost(Long tgChatId, AddLinkRequest addLinkRequest) {
         return ResponseEntity.ok(linksService.addLink(tgChatId, addLinkRequest));
     }
-
-
-    //    @GetMapping
-//    public ResponseEntity<?> getAllLinks(
-//            @RequestHeader("Tg-Chat-Id") Long chatId, @RequestParam(value = "tag", required = false) String tag) {
-//        return ResponseEntity.ok().body(linksService.getLinks(chatId, tag));
-//    }
-//
-//    @PostMapping
-//    public ResponseEntity<?> addLink(
-//            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody AddLinkRequest addLinkRequest) {
-//        return ResponseEntity.ok(this.linksService.addLink(chatId, addLinkRequest));
-//    }
-//
-//    @DeleteMapping
-//    public ResponseEntity<?> removeLink(
-//            @RequestHeader("Tg-Chat-Id") Long chatId, @Valid @RequestBody RemoveLinkRequest removeLinkRequest) {
-//        return ResponseEntity.ok(this.linksService.removeLink(chatId, removeLinkRequest));
-//    }
 }
