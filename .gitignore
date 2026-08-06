@@ -62,3 +62,7 @@ bot/.env
 /my_db_files
 
 .git-backup
+
+
+### logs ###
+logs
