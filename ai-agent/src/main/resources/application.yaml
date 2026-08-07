@@ -71,5 +71,30 @@ app:
     window-ms: 30000
 
 logging:
-  level:
-    org.hibernate: DEBUG
+  ai-agent:
+    masking:
+      http:
+        headers:
+          - Authorization
+        keys: []
+      yandex:
+        headers:
+          - Authorization
+          - x-folder-id
+        keys: []
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+          transport: http

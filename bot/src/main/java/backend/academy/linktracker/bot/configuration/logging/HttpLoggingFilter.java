@@ -1,16 +1,23 @@
 package backend.academy.linktracker.bot.configuration.logging;
 
+import backend.academy.linktracker.bot.properties.HttpMaskingProperties;
+import backend.academy.linktracker.bot.service.MaskingService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-
 @Slf4j
+@RequiredArgsConstructor
 public class HttpLoggingFilter extends OncePerRequestFilter {
+
+
+    private final MaskingService maskingService;
+    private final HttpMaskingProperties httpMaskingProperties;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -34,7 +41,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
     private void logRequest(HttpServletRequest request){
         String method = request.getMethod();
         String URI = request.getRequestURI();
-        String query = request.getQueryString();
+        String query = maskingService.maskQuery(request.getQueryString(), httpMaskingProperties);
         log.info("Request: method: {}, URI: {}, query: {}", method, URI, query);
     }
 

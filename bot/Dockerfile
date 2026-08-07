@@ -1,5 +1,50 @@
-FROM eclipse-temurin:25-jre-alpine
+FROM maven:3.9.16-eclipse-temurin-25 AS builder
+
+ARG APP_VERSION
+ARG BUILD_DATE
+
+LABEL version=${APP_VERSION}
+LABEL build_date=${BUILD_DATE}
+LABEL maintainer="LinkTracker"
+
 WORKDIR /app
-COPY target/*-exec.jar app.jar
-EXPOSE 8080 8011
+
+COPY pom.xml ./pom.xml
+COPY bot/pom.xml ./bot/pom.xml
+
+WORKDIR /app/bot
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -B \
+    -Dmaven.wagon.http.retryHandler.count=3
+
+COPY bot/src ./src
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -Dmaven.test.skip=true -B
+
+FROM eclipse-temurin:25-jre-alpine
+
+ARG APP_VERSION
+ARG BUILD_DATE
+
+LABEL version=${APP_VERSION}
+LABEL build_date=${BUILD_DATE}
+LABEL maintainer="LinkTracker"
+
+WORKDIR /app
+
+RUN apk add --no-cache curl
+
+RUN addgroup -S spring && adduser -S spring -G spring
+
+COPY --from=builder /app/bot/target/*.jar app.jar
+
+EXPOSE 8080
+
+USER spring:spring
+
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+        CMD curl -f http://localhost:8080/actuator/health || exit 1
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
