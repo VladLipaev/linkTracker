@@ -213,21 +213,3 @@ logging:
     console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
   level:
     root: INFO
-
-management:
-  endpoints:
-    web:
-      base-path: /
-      exposure:
-        include: health,info,prometheus
-      path-mapping:
-        prometheus: metrics
-  metrics:
-    distribution:
-      percentiles-histogram:
-        http:
-          server:
-            requests: true
-    export:
-      prometheus:
-        enabled: true

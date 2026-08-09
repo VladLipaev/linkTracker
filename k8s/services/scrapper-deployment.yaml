@@ -31,6 +31,8 @@ spec:
           ports:
             - containerPort: 8081
               name: http
+            - containerPort: 8012
+              name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
@@ -74,3 +76,7 @@ spec:
       targetPort: 8081
       nodePort: 30081
       name: http
+    - port: 8012
+      targetPort: 8012
+      nodePort: 30012
+      name: management

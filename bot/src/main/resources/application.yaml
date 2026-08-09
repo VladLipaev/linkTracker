@@ -151,11 +151,16 @@ management:
     port: 8011
   endpoints:
     web:
-      base-path: /
+      base-path: /actuator
       exposure:
-        include: prometheus,health
+        include: prometheus,health,info,threaddump
       path-mapping:
         prometheus: metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
   metrics:
     export:
       prometheus:
@@ -164,6 +169,7 @@ management:
           base-url: http://localhost:9091
           push-rate: 30s
           job: ${spring.application.name}
+        enabled: true
     distribution:
       percentiles-histogram:
         http:

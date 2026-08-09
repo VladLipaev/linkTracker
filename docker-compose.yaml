@@ -237,6 +237,7 @@ services:
     container_name: scrapper
     ports:
       - "8081:8081"
+      - "8012:8012"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -305,6 +306,7 @@ services:
     container_name: ai-agent
     ports:
       - "8082:8082"
+      - "8013:8013"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       POSTGRES_USER: postgres
