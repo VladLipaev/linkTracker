@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper;
 
 import liquibase.integration.spring.SpringLiquibase;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
@@ -23,6 +24,7 @@ import javax.sql.DataSource;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureTestRestTemplate
 @AutoConfigureMockMvc
+@Tag("integration")
 public abstract class AbstractIntegrationTest {
 
     public static final Network SHARED_NETWORK = Network.newNetwork();
