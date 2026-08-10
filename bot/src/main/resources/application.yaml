@@ -54,14 +54,18 @@ app:
         size: 10000
 
 logging:
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
-  level:
-    root: INFO
-    org:
-      springframework:
-        kafka: DEBUG
-
+  cache:
+    limit: 4096
+  bot:
+    masking:
+      http:
+        headers:
+          - Authorization
+        keys: []
+      telegram:
+        headers: []
+        keys:
+          - bot
 resilience4j:
   circuitbreaker:
     instances:
@@ -131,6 +135,20 @@ resilience4j:
         timeout-duration: 5s
 
 management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+          transport: http
   server:
     port: 8011
   endpoints:

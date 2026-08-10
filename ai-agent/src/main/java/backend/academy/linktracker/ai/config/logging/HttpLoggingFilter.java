@@ -1,20 +1,19 @@
-package backend.academy.linktracker.scrapper.config.logging;
+package backend.academy.linktracker.ai.config.logging;
 
-import backend.academy.linktracker.scrapper.properties.HttpMaskingProperties;
-import backend.academy.linktracker.scrapper.service.MaskingService;
+import backend.academy.linktracker.ai.config.logging.properties.HttpMaskingProperties;
+import backend.academy.linktracker.ai.service.MaskingService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @RequiredArgsConstructor

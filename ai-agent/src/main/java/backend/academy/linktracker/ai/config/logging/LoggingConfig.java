@@ -1,6 +1,6 @@
-package backend.academy.linktracker.scrapper.config.logging;
-import backend.academy.linktracker.scrapper.properties.HttpMaskingProperties;
-import backend.academy.linktracker.scrapper.service.MaskingService;
+package backend.academy.linktracker.ai.config.logging;
+import backend.academy.linktracker.ai.config.logging.properties.HttpMaskingProperties;
+import backend.academy.linktracker.ai.service.MaskingService;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

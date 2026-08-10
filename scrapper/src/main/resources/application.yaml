@@ -208,11 +208,21 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 5s
 logging:
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %clr(%-5level) %clr([%thread]){magenta} %clr(%logger{36}){cyan} - %msg %clr(%kvp){yellow}%n"
-  level:
-    root: INFO
-
+  cache:
+    limit: 4096
+  masking:
+    github:
+      headers:
+        - Authorization
+      keys: []
+    so:
+      headers: []
+      keys:
+        - key
+    http:
+      headers:
+        - Authorization
+      keys: []
 management:
   endpoints:
     web:
@@ -235,3 +245,17 @@ management:
               base-url: http://localhost:9091
               push-rate: 30s
               job: ${spring.application.name}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+          transport: http
