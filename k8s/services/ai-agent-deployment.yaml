@@ -24,6 +24,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082
+              name: http
+            - containerPort: 8013
+              name: management
           env:
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
@@ -62,3 +65,7 @@ spec:
       targetPort  : 8082
       nodePort: 30082
       name: http
+    - port: 8013
+      targetPort  : 8013
+      nodePort: 30013
+      name: management

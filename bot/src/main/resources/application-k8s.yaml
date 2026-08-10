@@ -9,21 +9,7 @@ app:
   scrapper:
     uri: http://scrapper-svc:8081
 management:
-  server:
-    port: 8011
-  endpoints:
-    web:
-      base-path: /
-      exposure:
-        include: prometheus,health
-      path-mapping:
-        prometheus: metrics
   metrics:
-    distribution:
-      percentiles-histogram:
-        http:
-          server:
-            requests: true
     export:
       prometheus:
         pushgateway:

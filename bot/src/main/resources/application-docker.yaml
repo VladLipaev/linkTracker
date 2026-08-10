@@ -129,20 +129,3 @@ resilience4j:
         limit-for-period: 100
         limit-refresh-period: 1s
         timeout-duration: 5s
-
-management:
-  server:
-    port: 8011
-  endpoints:
-    web:
-      base-path: /
-      exposure:
-        include: prometheus,health
-      path-mapping:
-        prometheus: metrics
-  metrics:
-    distribution:
-      percentiles-histogram:
-        http:
-          server:
-            requests: true
