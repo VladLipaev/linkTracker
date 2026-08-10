@@ -38,3 +38,4 @@ LinkTracker — это Telegram-бот, предназначенный для м
 - Многоуровневая отказоустойчивость через Resilience4j.
 - Мониторинг и алерты через Prometheus + Grafana.
 - оркестрация через Kubernetes
+
