@@ -208,6 +208,8 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 5s
 logging:
+  cache:
+    limit: 4096
   masking:
     github:
       headers:

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -55,5 +56,17 @@ public class MaskingService {
             })
             .collect(Collectors.joining("/"));
     }
+    public String maskBody(String body, MaskingProperties properties) {
+        if (body == null || body.isEmpty()) {
+            return body;
+        }
+        String masked = body;
+        for (String key : properties.getKeys()) {
+            masked = masked.replaceAll("(\"" + Pattern.quote(key) + "\"\\s*:\\s*\")([^\"]*)(\")", "$1***$3");
+            masked = masked.replaceAll("(\"" + Pattern.quote(key) + "\"\\s*:\\s*)([^,\\}\\s]+)", "$1***");
+        }
+        return masked;
+    }
+
 
 }

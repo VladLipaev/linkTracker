@@ -54,6 +54,8 @@ app:
         size: 10000
 
 logging:
+  cache:
+    limit: 4096
   bot:
     masking:
       http:

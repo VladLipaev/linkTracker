@@ -71,6 +71,8 @@ app:
     window-ms: 30000
 
 logging:
+  cache:
+    limit: 4096
   ai-agent:
     masking:
       http:
