@@ -278,6 +278,7 @@
                             <apiPackage>backend.academy.linktracker.scrapper.api</apiPackage>   <!-- ваш пакет -->
                             <modelPackage>backend.academy.linktracker.scrapper.dto</modelPackage>
                             <invokerPackage>backend.academy.linktracker.scrapper.invoker</invokerPackage>
+                            <importMappings>Pageable=org.springframework.data.domain.Pageable</importMappings>
                             <configOptions>
                                 <interfaceOnly>true</interfaceOnly>
                                 <useSpringBoot3>true</useSpringBoot3>
@@ -286,6 +287,7 @@
                                 <basePackage>backend.academy.linktracker.scrapper</basePackage>
                                 <useLombok>true</useLombok>
                                 <additionalModelTypeAnnotations>@lombok.Builder</additionalModelTypeAnnotations>
+                                <useSpringPageable>true</useSpringPageable>
                             </configOptions>
                             <!-- Эти параметры можно задать, если они не определены в parent -->
                             <generateApis>true</generateApis>

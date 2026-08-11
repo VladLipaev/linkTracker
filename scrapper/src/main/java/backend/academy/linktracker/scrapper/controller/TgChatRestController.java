@@ -1,6 +1,7 @@
 package backend.academy.linktracker.scrapper.controller;
 
 import backend.academy.linktracker.scrapper.api.TgChatApi;
+import backend.academy.linktracker.scrapper.dto.ChatAndListLinksResponse;
 import backend.academy.linktracker.scrapper.service.TgChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,5 +35,10 @@ public class TgChatRestController implements TgChatApi {
     public ResponseEntity<Void> tgChatIdPost(Long id) {
         tgChatService.addTgChat(id);
         return ResponseEntity.ok().build();
+    }
+
+    @Override
+    public ResponseEntity<ChatAndListLinksResponse> tgChatIdGet(Long id) {
+        return ResponseEntity.ok(tgChatService.getTgChatAndListLinks(id));
     }
 }
