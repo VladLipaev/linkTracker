@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -76,5 +78,9 @@ public class JpaSubscriptionRepositoryInvoker
     @Override
     public boolean existsById(SubscriptionId id) {
         return jpaRepository.existsById(id);
+    }
+
+    public Page<Subscription> findAll(Specification<Subscription> spec, Pageable pageable){
+        return jpaRepository.findAll(spec, pageable);
     }
 }

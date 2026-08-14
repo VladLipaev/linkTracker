@@ -6,11 +6,12 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface JpaSubscriptionRepository extends JpaRepository<Subscription, SubscriptionId> {
+public interface JpaSubscriptionRepository extends JpaRepository<Subscription, SubscriptionId>, JpaSpecificationExecutor<Subscription> {
 
     @Query("SELECT DISTINCT sub FROM Subscription sub join fetch sub.link l"
             + " join fetch sub.tags WHERE sub.chat.id = :chatId AND :tag MEMBER OF sub.tags")
