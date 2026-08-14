@@ -1,11 +1,13 @@
 package backend.academy.linktracker.scrapper.repository.orm;
 
+import backend.academy.linktracker.scrapper.dto.ChatSummary;
 import backend.academy.linktracker.scrapper.entity.Chat;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
@@ -45,5 +47,13 @@ public class JpaTgChatRepositoryInvoker implements TgChatRepository {
     @Override
     public boolean existsById(Long chatId) {
         return jpaTgChatRepository.existsById(chatId);
+    }
+
+    public Optional<Chat> getChatAndLinks(Long id) {
+        return jpaTgChatRepository.findChatWithLinks(id);
+    }
+
+    public Page<ChatSummary> getChatsAndSubsSize(Pageable pageable) {
+        return jpaTgChatRepository.findAllAndSubsSize(pageable);
     }
 }

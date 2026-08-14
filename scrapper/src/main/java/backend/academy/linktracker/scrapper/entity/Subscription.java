@@ -14,6 +14,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Entity
 @Getter
@@ -40,6 +42,7 @@ public class Subscription {
             name = "subscriptions_tags",
             joinColumns = {@JoinColumn(name = "chat_id"), @JoinColumn(name = "link_id")})
     @Column(name = "tag")
+    @Fetch(FetchMode.SUBSELECT)
     private List<String> tags;
 
     public Subscription(Long chatId, Long linkId) {

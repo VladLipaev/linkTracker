@@ -6,7 +6,55 @@ servers:
   - url: /api/v1
     description: Scrapper API v1
 paths:
+  /chats:
+    get:
+      summary: Получить список чатов с пагинацией и количеством активных ссылок
+      operationId: getChats
+      tags:
+        - chats
+      x-spring-paginated: true
+      responses:
+        '200':
+          description: Список чатов успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatsPageResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /tg-chat/{id}:
+    get:
+      summary: Получить чат со списком ссылок
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Чат и ссылки получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatAndListLinksResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: Чат не существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     post:
       summary: Зарегистрировать чат
       parameters:
@@ -192,10 +240,9 @@ components:
           type: array
           items:
             type: string
-        filters:
-          type: array
-          items:
-            type: string
+        lastCheckedAt:
+          type: string
+          format: date-time
     ApiErrorResponse:
       type: object
       required:
@@ -239,5 +286,53 @@ components:
         link:
           type: string
           format: uri
+    ChatAndListLinksResponse:
+      type: object
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkResponse'
+        chatId:
+          type: integer
+          format: int64
+    ChatSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Идентификатор чата
+        activeLinksCount:
+          type: integer
+          format: int64
+          description: Количество активных ссылок в этом чате
+    ChatsPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatSummary'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        number:
+          type: integer
+          description: Номер текущей страницы (начиная с 0)
+        size:
+          type: integer
+          description: Размер страницы
+        numberOfElements:
+          type: integer
+          description: Количество элементов на текущей странице
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
 security:
   - bearerAuth: []

@@ -4,10 +4,14 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedSubgraph;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,6 +20,29 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @Table(name = "chats")
+@NamedEntityGraph(
+    name = "Chat.withLinks",
+    attributeNodes = {
+        @NamedAttributeNode(value = "subscriptions", subgraph = "linkWithTags")
+    },
+    subgraphs = {
+        @NamedSubgraph(
+            name = "linkWithTags",
+            attributeNodes = {
+                @NamedAttributeNode(value = "link", subgraph = "link")
+            }
+        ),
+        @NamedSubgraph(
+            name = "link",
+            attributeNodes = {
+                @NamedAttributeNode("id"),
+                @NamedAttributeNode("url"),
+                @NamedAttributeNode("lastCheckedAt")
+            }
+        )
+    }
+
+)
 public class Chat {
 
     @Id
