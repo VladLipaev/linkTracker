@@ -3,18 +3,17 @@ package backend.academy.linktracker.scrapper.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import backend.academy.linktracker.scrapper.AbstractIntegrationTest;
-import backend.academy.linktracker.scrapper.entity.Chat;
-import backend.academy.linktracker.scrapper.entity.Link;
 import backend.academy.linktracker.scrapper.entity.Subscription;
-import backend.academy.linktracker.scrapper.repository.orm.JpaLinksRepository;
 import backend.academy.linktracker.scrapper.repository.orm.JpaSubscriptionRepository;
-import backend.academy.linktracker.scrapper.repository.orm.JpaTgChatRepository;
 import backend.academy.linktracker.scrapper.repository.utils.SubscriptionSpecifications;
+import com.github.database.rider.core.api.configuration.DBUnit;
+import com.github.database.rider.core.api.configuration.Orthography;
+import com.github.database.rider.core.api.dataset.DataSet;
+import com.github.database.rider.spring.api.DBRider;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,76 +21,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
+@DBRider
+@DBUnit(schema = "public", caseInsensitiveStrategy = Orthography.LOWERCASE) // Явно указываем схему
+@DataSet(value = "datasets/chats_links_subscriptions.yml", cleanBefore = true, cleanAfter = true)
 class JpaSubscriptionRepositorySpecificationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JpaSubscriptionRepository repository;
-
-    @Autowired
-    private JpaTgChatRepository tgChatRepository;
-
-    @Autowired
-    private JpaLinksRepository linksRepository;
-
-
-    private Chat chat1;
-    private Chat chat2;
-    private Link link1;
-    private Link link2;
-    private Link link3;
-
-    @BeforeEach
-    @Transactional
-    void setUp() {
-        // Создаём чаты
-        chat1 = new Chat(1L);
-        chat2 = new Chat(2L);
-        tgChatRepository.save(chat1);
-        tgChatRepository.save(chat2);
-        // Создаём ссылки
-        link1 = Link.builder()
-            .url("https://github.com/spring-projects/spring-boot")
-            .lastUpdated(OffsetDateTime.now())
-            .build();
-        link1.setLastCheckedAt(OffsetDateTime.of(2025, 1, 15, 10, 0, 0, 0, ZoneOffset.UTC));
-       linksRepository.save(link1);
-
-        link2 = Link.builder()
-            .url("https://github.com/spring-projects/spring-framework")
-            .lastUpdated(OffsetDateTime.now())
-            .build();
-        link2.setLastCheckedAt(OffsetDateTime.of(2025, 2, 20, 12, 0, 0, 0, ZoneOffset.UTC));
-        linksRepository.save(link2);
-
-        link3 = Link.builder()
-            .url("https://github.com/apache/kafka")
-            .lastUpdated(OffsetDateTime.now())
-            .build();
-        link3.setLastCheckedAt(OffsetDateTime.of(2025, 3, 10, 15, 0, 0, 0, ZoneOffset.UTC));
-        linksRepository.save(link3);
-
-        // Создаём подписки
-        Subscription sub1 = new Subscription(chat1.getId(), link1.getId());
-        sub1.setChat(chat1);
-        sub1.setLink(link1);
-        sub1.setTags(List.of("java", "spring"));
-        repository.save(sub1);
-
-        Subscription sub2 = new Subscription(chat1.getId(), link2.getId());
-        sub2.setChat(chat1);
-        sub2.setLink(link2);
-        sub2.setTags(List.of("java", "framework"));
-        repository.save(sub2);
-
-        Subscription sub3 = new Subscription(chat2.getId(), link3.getId());
-        sub3.setChat(chat2);
-        sub3.setLink(link3);
-        sub3.setTags(List.of("kafka"));
-        repository.save(sub3);
-    }
 
     @Test
     void shouldFilterByTag() {

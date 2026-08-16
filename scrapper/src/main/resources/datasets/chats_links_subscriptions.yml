@@ -1,0 +1,43 @@
+chats:
+  - id: 1
+  - id: 2
+
+links:
+  - id: 1
+    url: "https://github.com/spring-projects/spring-boot"
+    updated_at: "2025-04-10 10:00:00"
+    checked_at: "2025-01-15 10:00:00"
+  - id: 2
+    url: "https://github.com/spring-projects/spring-framework"
+    updated_at: "2025-04-10 10:00:00"
+    checked_at: "2025-02-20 12:00:00"
+  - id: 3
+    url: "https://github.com/apache/kafka"
+    updated_at: "2025-04-10 10:00:00"
+    checked_at: "2025-03-10 15:00:00"
+
+subscriptions:
+  - chat_id: 1
+    link_id: 1
+  - chat_id: 1
+    link_id: 2
+  - chat_id: 2
+    link_id: 3
+
+
+subscriptions_tags:
+  - chat_id: 1
+    link_id: 1
+    tag: "java"
+  - chat_id: 1
+    link_id: 1
+    tag: "spring"
+  - chat_id: 1
+    link_id: 2
+    tag: "java"
+  - chat_id: 1
+    link_id: 2
+    tag: "framework"
+  - chat_id: 2
+    link_id: 3
+    tag: "kafka"

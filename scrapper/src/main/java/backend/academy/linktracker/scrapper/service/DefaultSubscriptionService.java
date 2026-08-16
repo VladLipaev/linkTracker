@@ -7,6 +7,7 @@ import backend.academy.linktracker.scrapper.repository.utils.ParseSortUtil;
 import backend.academy.linktracker.scrapper.repository.utils.SubscriptionSpecifications;
 import backend.academy.linktracker.scrapper.service.mapper.SubscriptionToSubscriptionResponseMapper;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,14 +33,7 @@ public class DefaultSubscriptionService implements SubscriptionService {
                                                                   OffsetDateTime lastCheckBefore,
                                                                   OffsetDateTime lastCheckAfter,
                                                                   Long chatId) {
-        Specification<Subscription> spec = Specification
-            .where(SubscriptionSpecifications.hasTag(tag))
-            .and(SubscriptionSpecifications.chatIdEquals(chatId))
-            .and(SubscriptionSpecifications.urlContains(urlContains))
-            .and(SubscriptionSpecifications.updatedAfter(
-                lastCheckAfter != null ? lastCheckAfter.toInstant() : null))
-            .and(SubscriptionSpecifications.updatedBefore(
-                lastCheckBefore != null ? lastCheckBefore.toInstant() : null));
+        Specification<Subscription> spec = getSubscriptionSpecification(tag, urlContains, lastCheckBefore, lastCheckAfter, chatId);
 
         Pageable pageable = PageRequest.of(page, size, ParseSortUtil.parseSort(sort));
         Page<Subscription> pageSubscriptions = jpaSubscriptionRepositoryInvoker.findAll(spec, pageable);
@@ -56,5 +50,16 @@ public class DefaultSubscriptionService implements SubscriptionService {
             .totalElements(pageSubscriptions.getTotalElements())
             .totalPages(pageSubscriptions.getTotalPages())
             .build();
+    }
+
+    private Specification<Subscription> getSubscriptionSpecification(String tag, String urlContains, OffsetDateTime lastCheckBefore, OffsetDateTime lastCheckAfter, Long chatId) {
+        return Specification
+            .where(SubscriptionSpecifications.hasTag(tag))
+            .and(SubscriptionSpecifications.chatIdEquals(chatId))
+            .and(SubscriptionSpecifications.urlContains(urlContains))
+            .and(SubscriptionSpecifications.updatedAfter(
+                lastCheckAfter != null ? lastCheckAfter.toInstant() : null))
+            .and(SubscriptionSpecifications.updatedBefore(
+                lastCheckBefore != null ? lastCheckBefore.toInstant() : null));
     }
 }

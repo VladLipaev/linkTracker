@@ -80,7 +80,6 @@
         <spotbugs-slf4j-plugin.version>1.5.0</spotbugs-slf4j-plugin.version>
         <spotless-maven-plugin.version>3.2.1</spotless-maven-plugin.version>
         <error-prone.version>2.41.0</error-prone.version>
-
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
     </properties>
 
@@ -165,6 +164,12 @@
                 <version>${commons-compress.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.github.database-rider</groupId>
+                <artifactId>rider-spring</artifactId>
+                <version>1.44.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
@@ -208,6 +213,12 @@
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
                 <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>4.0.2</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

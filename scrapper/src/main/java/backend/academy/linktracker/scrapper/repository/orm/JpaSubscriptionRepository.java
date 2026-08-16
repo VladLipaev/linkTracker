@@ -3,8 +3,12 @@ package backend.academy.linktracker.scrapper.repository.orm;
 import backend.academy.linktracker.scrapper.entity.Subscription;
 import backend.academy.linktracker.scrapper.entity.SubscriptionId;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -35,4 +39,9 @@ public interface JpaSubscriptionRepository extends JpaRepository<Subscription, S
             "SELECT s.tags FROM Subscription s WHERE s.subscriptionId.chatId = :chatId AND s.subscriptionId.linkId = :linkId")
     Slice<String> findTagsByChatIdAndLinkId(
             @Param("chatId") Long chatId, @Param("linkId") Long linkId, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"link", "chat"})
+    @NotNull
+    Page<Subscription> findAll(@NotNull Specification<Subscription> spec, @NotNull Pageable pageable);
 }
