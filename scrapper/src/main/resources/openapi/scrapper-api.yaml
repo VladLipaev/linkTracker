@@ -6,6 +6,79 @@ servers:
   - url: /api/v1
     description: Scrapper API v1
 paths:
+  /subscriptions:
+    get:
+      summary: Получить список подписок по необязательным параметрам с пагинацией
+      operationId: getSubscriptions
+      tags:
+        - subscriptions
+      parameters:
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: urlContains
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: lastCheckBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: lastCheckAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: chatId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: sort
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            example: "lastCheckedAt,desc"
+      responses:
+        '200':
+          description: Список подписок успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSubscriptionsResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+
   /chats:
     get:
       summary: Получить список чатов с пагинацией и количеством активных ссылок
@@ -243,6 +316,25 @@ components:
         lastCheckedAt:
           type: string
           format: date-time
+    SubscriptionResponse:
+      type: object
+      properties:
+        chatId:
+          type: integer
+          format: int64
+        linkId:
+          type: integer
+          format: int64
+        tags:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+          format: uri
+        lastCheckedAt:
+          type: string
+          format: date-time
     ApiErrorResponse:
       type: object
       required:
@@ -256,6 +348,33 @@ components:
           type: string
         statusCode:
           type: integer
+    PageSubscriptionsResponse:
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionResponse'
+        totalPages:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        number:
+          type: integer
+          description: Номер текущей страницы (начиная с 0)
+        size:
+          type: integer
+          description: Размер страницы
+        numberOfElements:
+          type: integer
+          description: Количество элементов на текущей странице
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
     AddLinkRequest:
       type: object
       properties:

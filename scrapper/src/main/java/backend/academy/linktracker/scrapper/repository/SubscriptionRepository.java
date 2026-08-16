@@ -5,6 +5,8 @@ import backend.academy.linktracker.scrapper.entity.SubscriptionId;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface SubscriptionRepository extends BaseRepository<Subscription, SubscriptionId> {
 
