@@ -156,8 +156,6 @@ management:
       base-path: /actuator
       exposure:
         include: prometheus,health,info,threaddump
-      path-mapping:
-        prometheus: metrics
   endpoint:
     health:
       show-details: always

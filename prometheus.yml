@@ -4,18 +4,25 @@ global:
 
 scrape_configs:
   - job_name: 'scrapper'
-    metrics_path: '/metrics'
+    metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8081']
+      - targets: ['scrapper:8012']
         labels:
           application: 'scrapper'
 
   - job_name: 'bot'
-    metrics_path: '/metrics'
+    metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8011']
+      - targets: ['bot:8011']
         labels:
           application: 'bot'
+
+  - job_name: 'ai-agent'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ai-agent:8013']
+        labels:
+          application: 'ai-agent'
 
   - job_name: 'pushgateway'
     honor_labels: true
