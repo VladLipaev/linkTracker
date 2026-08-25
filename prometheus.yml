@@ -28,3 +28,10 @@ scrape_configs:
     honor_labels: true
     static_configs:
       - targets: [ 'pushgateway:9091' ]
+
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch-exporter:9114']
+        labels:
+          service: 'elasticsearch'
+          stack: 'elk'

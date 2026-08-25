@@ -12,6 +12,8 @@ public class ScrapperMetrics {
 
     private final MeterRegistry registry;
 
+    private final ConcurrentHashMap<String, AtomicInteger> linksCountBySource = new ConcurrentHashMap<>();
+
     public ScrapperMetrics(MeterRegistry registry) {
         this.registry = registry;
     }
@@ -29,9 +31,8 @@ public class ScrapperMetrics {
                 .record(durationMs);
     }
 
-    private final ConcurrentHashMap<String, AtomicInteger> linksCountBySource = new ConcurrentHashMap<>();
-
     public void initLinkCount(String source, int count) {
+        source = extractDomain(source);
         AtomicInteger counter = linksCountBySource.computeIfAbsent(source, k -> new AtomicInteger(count));
         Gauge.builder("links_on_track_total", counter::get)
                 .tags("tracked_source", source)
@@ -39,12 +40,22 @@ public class ScrapperMetrics {
     }
 
     public void incrementLinks(String source) {
+        source = extractDomain(source);
         AtomicInteger counter = linksCountBySource.get(source);
         if (counter != null) counter.incrementAndGet();
     }
 
     public void decrementLinks(String source) {
+        source = extractDomain(source);
         AtomicInteger counter = linksCountBySource.get(source);
         if (counter != null) counter.decrementAndGet();
+    }
+
+    private String extractDomain(String url) {
+        try {
+            return new java.net.URI(url).getHost().replace("www.", "");
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 }

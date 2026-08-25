@@ -4,28 +4,55 @@
     <property name="LOG_FILE" value="${LOG_PATH}/scrapper.log" />
     <property name="MAX_HISTORY" value="10"/>
     <property name="MAX_FILE_SIZE" value="10MB" />
+    <springProperty scope="context" name="service" source="spring.application.name" defaultValue="scrapper"/>
+    <springProperty scope="context" name="environment" source="ENVIRONMENT" defaultValue="development"/>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [traceId=%X{traceId:-}, spanId=%X{spanId:-}] %msg%n</pattern>
-        </encoder>
-    </appender>
+    <springProfile name="default">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [traceId=%X{traceId:-}, spanId=%X{spanId:-}] %msg%n</pattern>
+            </encoder>
+        </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_FILE}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/scrapper.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
-            <maxHistory>${MAX_HISTORY}</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [traceId=%X{traceId:-}, spanId=%X{spanId:-}] %msg%n</pattern>
-        </encoder>
-    </appender>
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/scrapper.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+                <maxHistory>${MAX_HISTORY}</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [traceId=%X{traceId:-}, spanId=%X{spanId:-}] %msg%n</pattern>
+            </encoder>
+        </appender>
 
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
-    </root>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="FILE" />
+        </root>
+    </springProfile>
 
+    <springProfile name="docker">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdc>true</includeMdc>
+                <customFields>{
+                    "service":"${service}",
+                    "environment":"${environment}"
+                    }</customFields>
+                <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                    <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                    <maxLength>2048</maxLength>
+                </throwableConverter>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+
+    <logger name="backend.academy.linktracker.scrapper" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="INFO"/>
 </configuration>

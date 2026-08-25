@@ -1,6 +1,5 @@
 package backend.academy.linktracker.scrapper.service;
 
-import backend.academy.linktracker.scrapper.config.metrics.ScrapperMetrics;
 import backend.academy.linktracker.scrapper.dto.AddLinkRequest;
 import backend.academy.linktracker.scrapper.dto.LinkResponse;
 import backend.academy.linktracker.scrapper.dto.ListLinksResponse;
@@ -13,6 +12,8 @@ import backend.academy.linktracker.scrapper.handler.LinkValidator;
 import backend.academy.linktracker.scrapper.repository.LinksRepository;
 import backend.academy.linktracker.scrapper.repository.SubscriptionRepository;
 import backend.academy.linktracker.scrapper.repository.TgChatRepository;
+import backend.academy.linktracker.scrapper.service.mapper.LinkAddedEvent;
+import io.opentelemetry.api.trace.Span;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -21,7 +22,9 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,7 +41,7 @@ public class DefaultLinksService implements LinksService {
     private final TgChatRepository tgChatRepository;
     private final LinkValidator linkValidator;
     private final SubscriptionRepository subscriptionRepository;
-    private final ScrapperMetrics metrics;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${app.controller.batch-size}")
     private Integer BATCH_SIZE;
@@ -47,8 +50,8 @@ public class DefaultLinksService implements LinksService {
     @Transactional(readOnly = true)
     public ListLinksResponse getAllLinks(Long chatId, String tag) {
         Chat chat = tgChatRepository
-                .findById(chatId)
-                .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
+            .findById(chatId)
+            .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
 
         ListLinksResponse response;
 
@@ -58,23 +61,23 @@ public class DefaultLinksService implements LinksService {
                 response = ListLinksResponse.builder().links(List.of()).size(0).build();
             } else {
                 List<LinkResponse> linkResponses = links.stream()
-                        .map(link -> LinkResponse
-                            .builder()
-                            .id(link.getId())
-                            .url(URI.create(link.getUrl()))
-                            .tags(List.of()).build())
-                        .toList();
+                    .map(link -> LinkResponse
+                        .builder()
+                        .id(link.getId())
+                        .url(URI.create(link.getUrl()))
+                        .tags(List.of()).build())
+                    .toList();
                 response = ListLinksResponse.builder().links(linkResponses).size(linkResponses.size()).build();
             }
         } else {
             List<Subscription> subscriptions = subscriptionRepository.findSubscriptionsByChatIdAndTag(chatId, tag);
             List<LinkResponse> linkResponses = subscriptions.stream()
-                    .map(sub -> LinkResponse.builder()
-                            .id(sub.getLink().getId())
-                            .url(URI.create(sub.getLink().getUrl()))
-                                .tags(sub.getTags()
-                            ).build())
-                    .toList();
+                .map(sub -> LinkResponse.builder()
+                    .id(sub.getLink().getId())
+                    .url(URI.create(sub.getLink().getUrl()))
+                    .tags(sub.getTags()
+                    ).build())
+                .toList();
             response = ListLinksResponse.builder().links(linkResponses).size(linkResponses.size()).build();
         }
 
@@ -86,8 +89,8 @@ public class DefaultLinksService implements LinksService {
     public LinkResponse addLink(Long chatId, AddLinkRequest request) {
 
         Chat chat = tgChatRepository
-                .findById(chatId)
-                .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
+            .findById(chatId)
+            .orElseThrow(() -> new ChatNotFoundException("Чат не зарегистрирован"));
         String url = String.valueOf(request.getLink());
         if (!linkValidator.isValid(url)) {
             throw new UnsupportedLinkException("Ссылка не поддерживается.");
@@ -115,10 +118,25 @@ public class DefaultLinksService implements LinksService {
         if (!tags.isEmpty()) {
             subscription.setTags(request.getTags());
         }
+
         subscriptionRepository.save(subscription);
-        String domain = extractDomain(url);
-        metrics.incrementLinks(domain);
-        return LinkResponse.builder().id(savedLink.getId()).url(URI.create(savedLink.getUrl())).tags(tags).build();
+
+        try {
+            MDC.put("link_id", String.valueOf(savedLink.getId()));
+            MDC.put("chat_id", String.valueOf(chatId));
+
+            applicationEventPublisher.publishEvent(new LinkAddedEvent(url));
+
+            Span.current().setAttribute("link.id", savedLink.getId());
+
+            return LinkResponse.builder().id(savedLink.getId()).url(URI.create(savedLink.getUrl())).tags(tags).build();
+
+        } finally {
+            MDC.remove("link_id");
+            MDC.remove("chat_id");
+
+        }
+
     }
 
     @Override
@@ -129,20 +147,20 @@ public class DefaultLinksService implements LinksService {
             throw new ChatNotFoundException("Чат не зарегистрирован");
         }
 
-        if (!linkValidator.isValid(String.valueOf(removeLinkRequest.getLink()))){
+        if (!linkValidator.isValid(String.valueOf(removeLinkRequest.getLink()))) {
             throw new UnsupportedLinkException("Ссылка не поддерживается.");
         }
         Link link = linksRepository
-                .findByChatIdAndUrl(chatId, String.valueOf(removeLinkRequest.getLink()))
-                .orElseThrow(
-                        () -> new NoSuchElementException("Cсылка %s не найдена".formatted(removeLinkRequest.getLink())));
+            .findByChatIdAndUrl(chatId, String.valueOf(removeLinkRequest.getLink()))
+            .orElseThrow(
+                () -> new NoSuchElementException("Cсылка %s не найдена".formatted(removeLinkRequest.getLink())));
 
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
         Slice<String> sliceTags = subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), pageable);
         List<String> tags = new ArrayList<>(sliceTags.getContent());
         while (sliceTags.hasNext()) {
             sliceTags =
-                    subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), sliceTags.nextPageable());
+                subscriptionRepository.findTagsByChatIdAndLinkId(chatId, link.getId(), sliceTags.nextPageable());
             tags.addAll(sliceTags.getContent());
         }
 
@@ -150,16 +168,20 @@ public class DefaultLinksService implements LinksService {
         if (!subscriptionRepository.existsByLinkId(link.getId())) {
             linksRepository.deleteById(link.getId());
         }
-        String domain = extractDomain(String.valueOf(removeLinkRequest.getLink()));
-        metrics.decrementLinks(domain);
-        return LinkResponse.builder().id(link.getId()).url(URI.create(link.getUrl())).tags(tags).build();
+        try {
+            MDC.put("link_id", String.valueOf(link.getId()));
+            MDC.put("chat_id", String.valueOf(chatId));
+
+            applicationEventPublisher.publishEvent(new LinkRemovedEvent(String.valueOf(removeLinkRequest.getLink())));
+
+            return LinkResponse.builder().id(link.getId()).url(URI.create(link.getUrl())).tags(tags).build();
+
+        } finally {
+            MDC.remove("link_id");
+            MDC.remove("chat_id");
+        }
+
     }
 
-    private String extractDomain(String url) {
-        try {
-            return new java.net.URI(url).getHost().replace("www.", "");
-        } catch (Exception e) {
-            return "unknown";
-        }
-    }
+
 }
