@@ -66,3 +66,5 @@ bot/.env
 
 ### logs ###
 logs
+
+connector-config.json

@@ -11,6 +11,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "wal_level=logical"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -459,6 +468,35 @@ services:
       logstash:
         condition: service_started
     restart: unless-stopped
+    networks:
+      - linktracker
+
+  connect:
+    image: debezium/connect:2.5
+    container_name: debezium-connect
+    ports:
+      - "8099:8083"
+    environment:
+      BOOTSTRAP_SERVERS: broker-1:9092,broker-2:9092,broker-3:9092
+      GROUP_ID: "connect-cluster"
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      # Конвертер для значения сообщений в Kafka (тоже JSON)
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      # Конвертер для внутренних сообщений Connect (например, для оффсетов) – также JSON
+      INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_PLUGIN_PATH: /kafka/connect
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+      - postgresql
     networks:
       - linktracker
 

@@ -1,5 +1,6 @@
 package backend.academy.linktracker.ai.controller.kafka;
 
+import backend.academy.linktracker.ai.dto.LinkUpdate;
 import backend.academy.linktracker.ai.entity.dto.ProcessedLinkUpdateDto;
 import backend.academy.linktracker.ai.service.AiAgentIdempotencyService;
 import backend.academy.linktracker.ai.service.PrioritizationService;
@@ -10,9 +11,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Controller;
+import tools.jackson.databind.ObjectMapper;
 
 @Controller
 @RequiredArgsConstructor
@@ -24,14 +27,17 @@ public class RawLinkUpdateConsumer {
     private final PrioritizationService prioritizationService;
     private final AiAgentIdempotencyService idempotencyService;
     private final ProcessedLinkUpdateService processedLinkUpdateService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "${app.kafka.consumer.topic.name}")
     public void listen(
-            RawLinkUpdateAvro rawLinkUpdateAvro, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
+        ConsumerRecord<String, byte[]> record, @Header(name = "event-id", required = false) byte[] eventIdBytes) {
         if (eventIdBytes == null) {
             log.atError().setMessage("event-id не был указан").log();
             throw new IllegalArgumentException("event-id не был указан");
         }
+        byte[] value = record.value();
+        RawLinkUpdateAvro rawLinkUpdateAvro = objectMapper.readValue(value, RawLinkUpdateAvro.class);
         boolean validate = rawLinkUpdateValidator.validate(rawLinkUpdateAvro);
         if (!validate) {
             log.atError()
@@ -52,8 +58,9 @@ public class RawLinkUpdateConsumer {
         String url = extractUrl(rawLinkUpdateAvro.getDescription());
         ProcessedLinkUpdateDto processedLinkUpdateDto = prioritizationService.prioritize(rawLinkUpdateAvro);
         if (rawLinkUpdateValidator.isAboveThreshold(rawLinkUpdateAvro)) {
-            processedLinkUpdateDto.setDescription(
-                    String.format("%s%n%s", url, summarizeService.summarize(processedLinkUpdateDto.getDescription())));
+//            processedLinkUpdateDto.setDescription(
+//                    String.format("%s%n%s", url, summarizeService.summarize(processedLinkUpdateDto.getDescription())));
+            processedLinkUpdateDto.setDescription(String.format("%s%n%s", url, "......"));
         }
         processedLinkUpdateService.saveProcessedLinkUpdate(processedLinkUpdateDto);
     }

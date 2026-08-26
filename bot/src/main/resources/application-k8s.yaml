@@ -7,7 +7,7 @@ app:
   kafka:
     schema-registry: http://schema-registry-svc:9093
   scrapper:
-    uri: http://scrapper-svc:8081
+    uri: http://scrapper-svc:8081/api/v1
 management:
   metrics:
     export:

@@ -27,7 +27,8 @@ app:
       concurrency: 3
       group-id: "agent-fresh-group-v1"
       topic:
-        name: link.raw-updates
+#        name: link.raw-updates
+         name: order.outbox
     producer:
       send-delay: 60s
       topic:
