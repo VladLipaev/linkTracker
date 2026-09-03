@@ -1,5 +1,6 @@
 package backend.academy.linktracker.scrapper.service.kafka;
 
+import backend.academy.linktracker.scrapper.config.metrics.DebeziumMetrics;
 import backend.academy.linktracker.scrapper.dto.LinkUpdate;
 import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
 import backend.academy.linktracker.scrapper.entity.OutBoxMessage;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class KafkaNotificationUpdateSender implements NotificationUpdateSender {
 
     private final OutBoxRepository outBoxRepository;
-    private final LinkUpdateToAvroMapper mapper;
+    private final DebeziumMetrics debeziumMetrics;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -31,15 +32,16 @@ public class KafkaNotificationUpdateSender implements NotificationUpdateSender {
         String spanId = Span.current().getSpanContext().getSpanId();
 
         OutBoxMessage outBoxMessage = OutBoxMessage.builder()
-            .payload(mapper.rawLinkUpdateAvro(update))
+            .payload(update)
             .partitionKey(String.valueOf(update.id()))
             .traceId(traceId)
             .spanId(spanId)
             .aggregateId(update.id().toString())
             .aggregateType("LinkUpdate")
-            .eventType("RawLinkUpdateAvro")
+            .eventType("LinkUpdate")
             .build();
         outBoxRepository.save(outBoxMessage);
+        debeziumMetrics.incrementOutboxCreated();
         log.atInfo()
                 .setMessage("Уведомление отправлено в outbox")
                 .addKeyValue("url", update.url())

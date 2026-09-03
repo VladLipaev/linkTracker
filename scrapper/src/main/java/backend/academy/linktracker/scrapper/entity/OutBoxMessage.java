@@ -39,7 +39,7 @@ public class OutBoxMessage {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "JSON", nullable = false)
-    private RawLinkUpdateAvro payload;
+    private LinkUpdate payload;
 
     @Column(name = "partition_key")
     private String partitionKey;
@@ -63,7 +63,7 @@ public class OutBoxMessage {
     private OffsetDateTime processedAt;
 
     @Builder
-    public OutBoxMessage(UUID uuid, RawLinkUpdateAvro payload, String partitionKey, String traceId, String spanId, String aggregateType, String aggregateId, String eventType) {
+    public OutBoxMessage(UUID uuid, LinkUpdate payload, String partitionKey, String traceId, String spanId, String aggregateType, String aggregateId, String eventType) {
         this.id = uuid;
         this.payload = payload;
         this.partitionKey = partitionKey;

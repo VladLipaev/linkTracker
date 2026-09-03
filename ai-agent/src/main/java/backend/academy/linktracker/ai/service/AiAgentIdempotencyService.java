@@ -37,4 +37,9 @@ public class AiAgentIdempotencyService {
     public void removeEvent(UUID eventId) {
         idempotencyRepository.removeEventById(eventId);
     }
+
+    @Transactional
+    public void release(UUID eventId) {
+        idempotencyRepository.release(eventId);
+    }
 }

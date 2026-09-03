@@ -1,11 +1,9 @@
-package backend.academy.linktracker.scrapper.service.kafka;
+package backend.academy.linktracker.ai.controller.kafka;
 
-import backend.academy.linktracker.scrapper.dto.LinkUpdate;
-import backend.academy.linktracker.scrapper.dto.avro.LinkUpdateAvro;
-import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
-import backend.academy.linktracker.scrapper.handler.GitHubLinkHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import backend.academy.linktracker.ai.dto.LinkUpdate;
+import backend.academy.linktracker.scrapper.dto.avro.RawLinkUpdateAvro;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +14,18 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LinkUpdateToAvroMapper {
 
-    private final GitHubLinkHandler gitHubLinkHandler;
-
-    public LinkUpdateAvro linkUpdateAvro(LinkUpdate payload) {
-        return LinkUpdateAvro.newBuilder()
-                .setId(payload.id())
-                .setDescription(payload.description())
-                .setUrl(payload.url())
-                .setTgChatIds(payload.tgChatIds())
-                .build();
-    }
+    private static final Pattern GITHUB_PATTERN =
+        Pattern.compile("^https://github\\.com/(?<owner>[\\w.-]+)/(?<repo>[\\w.-]+)/?$");
+//
+//
+//    public LinkUpdateAvro linkUpdateAvro(LinkUpdate payload) {
+//        return LinkUpdateAvro.newBuilder()
+//                .setId(payload.id())
+//                .setDescription(payload.description())
+//                .setUrl(payload.url())
+//                .setTgChatIds(payload.tgChatIds())
+//                .build();
+//    }
 
     @SneakyThrows
     public RawLinkUpdateAvro rawLinkUpdateAvro(LinkUpdate linkUpdate) {
@@ -35,8 +35,7 @@ public class LinkUpdateToAvroMapper {
         if (description == null) {
             description = "";
         }
-
-        if (gitHubLinkHandler.supports(url)) {
+        if (supportsGithub(url)) {
             Pattern pattern1 = Pattern.compile("Обновления в репозитории: \\*\\s*([^/]+)");
             Matcher matcher1 = pattern1.matcher(description);
 
@@ -82,4 +81,9 @@ public class LinkUpdateToAvroMapper {
                     .build();
         }
     }
+
+    public boolean supportsGithub(String url) {
+        return GITHUB_PATTERN.matcher(url).matches();
+    }
+
 }

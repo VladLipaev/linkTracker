@@ -11,6 +11,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface OutBoxRepository extends JpaRepository<OutBoxMessage, UUID> {
+    @Modifying
+    @Query("""
+update OutBoxMessage o
+set o.status = :status, o.processedAt = CURRENT_TIMESTAMP
+where o.id = :eventId
+and o.status = 'new'
+""")
+    int updateStatus(UUID eventId, String status);
+
+    long countByStatus(String aNew);
+
+    long count();
 
 //    @Query(value = """
 //    SELECT * FROM outbox_link_update
