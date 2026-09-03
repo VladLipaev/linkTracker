@@ -11,6 +11,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
 @RequiredArgsConstructor
@@ -170,12 +172,8 @@ public class RestClientScrapperRestClient implements ScrapperClient {
     }
 
     private void handleScrapperClientException(ClientHttpResponse response) throws IOException {
-        String description = "Ошибка клиента: %s".formatted(response.getStatusText());
-
-        log.atError()
-                .setMessage("Бизнес-ошибка")
-                .addKeyValue("message", description)
-                .log();
-        throw new ScrapperClientException(description);
+        String body = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+        log.error("Scrapper error: status={}, body={}", response.getStatusCode(), body);
+        throw new ScrapperClientException("Ошибка клиента: " + body);
     }
 }

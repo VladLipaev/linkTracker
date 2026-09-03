@@ -24,7 +24,7 @@ app:
     update-listener-sleep: 1s
     debug: false
   scrapper:
-    uri: http://scrapper:8081
+    uri: http://scrapper:8081/api/v1
   communication:
     client:
       mode: rest # rest

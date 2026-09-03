@@ -22,4 +22,10 @@ public interface IdempotencyRepository extends JpaRepository<Event, UUID> {
     int trySave(@Param("eventId") UUID eventId, @Param("time") OffsetDateTime time);
 
     void removeEventById(UUID id);
+
+    @Modifying
+    @Query(
+        value = "DELETE FROM raw_processed_event WHERE event_id = :eventId",
+        nativeQuery = true)
+    void release(@Param("eventId") UUID eventId);
 }

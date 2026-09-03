@@ -21,7 +21,7 @@ public class BotClientBeans {
             havingValue = "rest",
             matchIfMissing = true)
     public ScrapperClient restClientScrapperRestClient(
-            @Value("${app.scrapper.uri:http://localhost:8081}") String scrapperBaseUri,
+            @Value("${app.scrapper.uri:http://localhost:8081/api/v1}") String scrapperBaseUri,
             @Value("${app.communication.client.connect-timeout:5s}") Duration connectTimeout,
             @Value("${app.communication.client.read-timeout:10s}") Duration readTimeout,
             KafkaTemplate<String, Object> kafkaTemplate) {

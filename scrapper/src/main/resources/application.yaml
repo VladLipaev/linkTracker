@@ -265,3 +265,19 @@ management:
         otlp:
           endpoint: http://localhost:4318/v1/traces
           transport: http
+
+debezium:
+  connector:
+    name: "outbox-connector"
+    topics-prefix: "linktracker"
+    table-include-list: "public.outbox_link_update"
+    outbox-route-topic: "order.outbox"
+    plugin-name: "pgoutput"
+  connect:
+    url: ${KAFKA_CONNECT_URL:http://connect:8083}
+  database:
+    host: ${POSTGRES_HOST:postgresql}
+    port: ${POSTGRES_PORT:5432}
+    name: ${POSTGRES_DB:postgres}
+    user: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
