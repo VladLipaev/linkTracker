@@ -17,7 +17,22 @@ spring:
         negotiation-type: plaintext
   kafka:
     bootstrap-servers: localhost:19092,localhost:29092,localhost:39092
+  data:
+    redis:
+      cluster:
+        nodes:
+          - 127.0.0.1:7001
+          - 127.0.0.1:7002
+          - 127.0.0.1:7003
+      lettuce:
+        cluster:
+          refresh:
+            adaptive: true
+            period: 10s
 app:
+  cache:
+    dialog:
+      use-redis: true
   telegram:
     url: https://api.telegram.org/bot
     token: ${APP_TELEGRAM_TOKEN} # Use env variable. DO NOT KEEP TOKEN HERE
@@ -47,6 +62,13 @@ app:
       group-id: "bot-fresh-group-v1"
     topic:
       name: link.processed-updates
+  redis:
+    time-to-live: 2m
+    lettuce:
+      client:
+        host: 127.0.0.1
+    cache-key-prefix:
+      dialog: bot:dialog
   rate-limiter:
     api:
       caffeine:

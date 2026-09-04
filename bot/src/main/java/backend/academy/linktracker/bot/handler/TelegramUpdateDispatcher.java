@@ -2,17 +2,19 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.configuration.metrics.BotMetrics;
-import backend.academy.linktracker.bot.handler.dialog.DialogManager;
+import backend.academy.linktracker.bot.controller.cache.CacheDialogUtil;
 import backend.academy.linktracker.bot.handler.dialog.DialogScrapperStepProcessor;
 import backend.academy.linktracker.bot.handler.dialog.UserSession;
 import backend.academy.linktracker.bot.handler.dialog.UserState;
 import backend.academy.linktracker.bot.handler.logging.TelegramDispatcherLogging;
 import com.pengrad.telegrambot.model.Update;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,10 +24,14 @@ public class TelegramUpdateDispatcher {
 
     private final List<CommandHandler> commandHandlers;
     private final UnknownCommandHandler unknownCommandHandler;
-    private final DialogManager dialogManager;
     private final DialogScrapperStepProcessor dialogScrapperStepProcessor;
     private final TelegramClientFacade telegramClientFacade;
     private final BotMetrics botMetrics;
+    private final CacheDialogUtil cacheDialogUtil;
+
+
+    @Value("${app.redis.time-to-live}")
+    private Duration ttl;
 
     private Map<String, CommandHandler> handlerMap;
 
@@ -47,8 +53,7 @@ public class TelegramUpdateDispatcher {
         if (text == null) return;
         try {
 
-            UserSession session = dialogManager.getSession(chatId);
-
+            UserSession session = cacheDialogUtil.getUserSession(chatId).orElseGet(UserSession::base);
             if (text.startsWith("/")) {
                 handleCommand(update, text, session, startTime);
             } else if (session.state() != UserState.BASE) {
@@ -75,7 +80,7 @@ public class TelegramUpdateDispatcher {
 
         if (text.equals("/cancel")) {
             if (session.state() != UserState.BASE) {
-                dialogManager.setSession(chatId, UserSession.base());
+                cacheDialogUtil.invalidateChatCache(chatId);
                 telegramClientFacade.sendMessage(chatId, "Отмена выполнения команды");
             } else {
                 telegramClientFacade.sendMessage(chatId, "Нечего отменять");
@@ -86,7 +91,7 @@ public class TelegramUpdateDispatcher {
         }
 
         if (session.state() != UserState.BASE) {
-            dialogManager.setSession(chatId, UserSession.base());
+            cacheDialogUtil.invalidateChatCache(chatId);
         }
 
         CommandHandler handler = handlerMap.get(text);
