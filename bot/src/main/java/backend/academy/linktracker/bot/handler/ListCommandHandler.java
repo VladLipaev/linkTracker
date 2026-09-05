@@ -2,19 +2,24 @@ package backend.academy.linktracker.bot.handler;
 
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
 import backend.academy.linktracker.bot.command.TelegramCommand;
-import backend.academy.linktracker.bot.handler.dialog.DialogManager;
+import backend.academy.linktracker.bot.controller.cache.CacheDialogUtil;
 import backend.academy.linktracker.bot.handler.dialog.UserSession;
 import backend.academy.linktracker.bot.handler.dialog.UserState;
 import com.pengrad.telegrambot.model.Update;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class ListCommandHandler implements CommandHandler {
     private final TelegramClientFacade telegramClientFacade;
-    private final DialogManager dialogManager;
     private final TelegramCommand telegramCommand = TelegramCommand.LIST;
+    private final CacheDialogUtil cacheDialogUtil;
+
+    @Value("${app.redis.time-to-live}")
+    private Duration ttl;
 
     @Override
     public void handle(Update update) {
@@ -22,7 +27,7 @@ public class ListCommandHandler implements CommandHandler {
         telegramClientFacade.sendMessage(
                 chatId,
                 "Введите тег, по которому хотите получить" + " ссылки, либо введите skip чтобы получить их все");
-        dialogManager.setSession(chatId, new UserSession(UserState.WAITING_FOR_LIST_TAG, null));
+        cacheDialogUtil.addCache(chatId, new UserSession(UserState.WAITING_FOR_LIST_TAG, null), ttl);
     }
 
     @Override

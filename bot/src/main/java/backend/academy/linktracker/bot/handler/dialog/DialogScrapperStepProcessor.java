@@ -3,12 +3,15 @@ package backend.academy.linktracker.bot.handler.dialog;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
+import backend.academy.linktracker.bot.controller.cache.CacheDialogUtil;
 import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
 import com.pengrad.telegrambot.model.Update;
+import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -16,10 +19,14 @@ import org.springframework.web.client.ResourceAccessException;
 @RequiredArgsConstructor
 @Slf4j
 public class DialogScrapperStepProcessor {
-    private final DialogManager dialogManager;
     private final TelegramClientFacade telegramClientFacade;
     private final ScrapperClient scrapperClient;
     private final BotLinkValidator linkValidator;
+    private final CacheDialogUtil cacheDialogUtil;
+
+
+    @Value("${app.redis.time-to-live}")
+    private Duration ttl;
 
     public void process(Update update, UserSession session) {
         long chatId = update.message().chat().id();
@@ -31,7 +38,7 @@ public class DialogScrapperStepProcessor {
                 case WAITING_FOR_TRACK_LINK -> {
                     if (linkValidator.isValid(text)) {
                         // Ссылка валидна, идем дальше
-                        dialogManager.setSession(chatId, new UserSession(UserState.WAITING_FOR_TRACK_TAGS, text));
+                        cacheDialogUtil.addCache(chatId, new UserSession(UserState.WAITING_FOR_TRACK_TAGS, null), ttl);
                         telegramClientFacade.sendMessage(
                                 chatId, "Ссылка принята. Теперь введите теги через запятую или напишите skip");
                     } else {
@@ -48,7 +55,7 @@ public class DialogScrapperStepProcessor {
                         LinkResponse linkResponse = scrapperClient.removeLink(chatId, text);
                         telegramClientFacade.sendMessage(
                                 chatId, "Готово! Ссылка %s удалена из отслеживания.".formatted(linkResponse.url()));
-                        dialogManager.setSession(chatId, UserSession.base());
+                        cacheDialogUtil.invalidateChatCache(chatId);
                     } else {
                         telegramClientFacade.sendMessage(chatId, """
                                 Некорректная ссылка!\s
@@ -67,7 +74,7 @@ public class DialogScrapperStepProcessor {
                     LinkResponse linkResponse = scrapperClient.addLink(chatId, link, tags);
                     telegramClientFacade.sendMessage(
                             chatId, "Готово! Ссылка %s добавлена в отслеживание.".formatted(linkResponse.url()));
-                    dialogManager.setSession(chatId, UserSession.base());
+                    cacheDialogUtil.invalidateChatCache(chatId);
                 }
 
                 // состояние ожидания тегов для нахождения списка ссылок по данному тегу
@@ -83,10 +90,10 @@ public class DialogScrapperStepProcessor {
                         response.links().forEach(link -> sb.append(link.url()).append("\n"));
                         telegramClientFacade.sendMessage(chatId, sb.toString());
                     }
-                    dialogManager.setSession(chatId, UserSession.base());
+                    cacheDialogUtil.invalidateChatCache(chatId);
                 }
 
-                default -> dialogManager.setSession(chatId, UserSession.base());
+                default -> cacheDialogUtil.invalidateChatCache(chatId);
             }
         } catch (ScrapperClientException e) {
             log.atError()
@@ -97,7 +104,7 @@ public class DialogScrapperStepProcessor {
                     .setCause(e)
                     .log();
             telegramClientFacade.sendMessage(chatId, "Ошибка: " + e.getMessage());
-            dialogManager.setSession(chatId, UserSession.base());
+            cacheDialogUtil.invalidateChatCache(chatId);
 
         } catch (ResourceAccessException e) {
             log.atError()
@@ -108,7 +115,7 @@ public class DialogScrapperStepProcessor {
                     .setCause(e)
                     .log();
             telegramClientFacade.sendMessage(chatId, "Сервис отслеживания временно недоступен. Попробуйте позже.");
-            dialogManager.setSession(chatId, UserSession.base());
+            cacheDialogUtil.invalidateChatCache(chatId);
         }
     }
 }

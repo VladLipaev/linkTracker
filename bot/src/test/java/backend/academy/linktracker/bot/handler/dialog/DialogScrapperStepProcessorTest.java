@@ -13,23 +13,25 @@ import static org.mockito.Mockito.when;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClient;
 import backend.academy.linktracker.bot.client.scrapper.ScrapperClientException;
 import backend.academy.linktracker.bot.client.telegram.TelegramClientFacade;
+import backend.academy.linktracker.bot.controller.cache.CacheDialogUtil;
 import backend.academy.linktracker.bot.dto.LinkResponse;
 import backend.academy.linktracker.bot.dto.ListLinksResponse;
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 
 @ExtendWith(MockitoExtension.class)
 class DialogScrapperStepProcessorTest {
     private DialogScrapperStepProcessor processor;
 
-    private DialogManager dialogManager = new DialogManager(); // InMemory, можно настоящий
 
     @Mock
     private TelegramClientFacade telegramClient;
@@ -37,13 +39,19 @@ class DialogScrapperStepProcessorTest {
     @Mock
     private ScrapperClient scrapperClient;
 
+    @Mock
+    private CacheDialogUtil cacheDialogUtil;
+
     private BotLinkValidator validator = new BotLinkValidator();
+
+    @Value("${app.redis.time-to-live}")
+    private Duration ttl;
 
     @BeforeEach
     void setUp() {
-        dialogManager = new DialogManager();
         validator = new BotLinkValidator();
-        processor = new DialogScrapperStepProcessor(dialogManager, telegramClient, scrapperClient, validator);
+        processor = new DialogScrapperStepProcessor(telegramClient, scrapperClient, validator, cacheDialogUtil);
+        cacheDialogUtil.invalidateChatCache(123L);
     }
 
     @Test
@@ -65,7 +73,7 @@ class DialogScrapperStepProcessorTest {
         verify(telegramClient).sendMessage(eq(chatId), contains("введите теги"));
         assertEquals(
                 UserState.WAITING_FOR_TRACK_TAGS,
-                dialogManager.getSession(chatId).state());
+                cacheDialogUtil.getUserSession(chatId).get().state());
     }
 
     @Test
@@ -73,7 +81,7 @@ class DialogScrapperStepProcessorTest {
         // Arrange
         long chatId = 123L;
         UserSession session = new UserSession(UserState.WAITING_FOR_TRACK_LINK, null);
-        dialogManager.setSession(chatId, session);
+        cacheDialogUtil.addCache(chatId, session, ttl);
 
         Update update = mock(Update.class);
         Message message = mock(Message.class);
@@ -89,7 +97,7 @@ class DialogScrapperStepProcessorTest {
         verify(telegramClient).sendMessage(eq(chatId), contains("Некорректная ссылка!"));
         assertEquals(
                 UserState.WAITING_FOR_TRACK_LINK,
-                dialogManager.getSession(chatId).state());
+                cacheDialogUtil.getUserSession(chatId).get().state());
     }
 
     @Test
@@ -100,7 +108,7 @@ class DialogScrapperStepProcessorTest {
 
         // Пользователь находится на этапе ввода тегов
         UserSession session = new UserSession(UserState.WAITING_FOR_TRACK_TAGS, link);
-        dialogManager.setSession(chatId, session);
+        cacheDialogUtil.addCache(chatId, session, ttl);
 
         Update update = mock(Update.class);
         Message message = mock(Message.class);
@@ -121,7 +129,7 @@ class DialogScrapperStepProcessorTest {
         verify(telegramClient).sendMessage(eq(chatId), contains("Ссылка уже отслеживается"));
 
         // 2. Проверяем, что состояние сбросилось в BASE
-        assertEquals(UserState.BASE, dialogManager.getSession(chatId).state());
+        assertEquals(UserState.BASE, cacheDialogUtil.getUserSession(chatId).get().state());
     }
 
     @Test
@@ -131,7 +139,7 @@ class DialogScrapperStepProcessorTest {
         String link = "https://github.com/user/repo";
 
         UserSession session = new UserSession(UserState.WAITING_FOR_LIST_TAG, link);
-        dialogManager.setSession(chatId, session);
+        cacheDialogUtil.addCache(chatId, session, ttl);
 
         Update update = mock(Update.class);
         Message message = mock(Message.class);
@@ -153,7 +161,7 @@ class DialogScrapperStepProcessorTest {
         verify(telegramClient).sendMessage(eq(chatId), contains(link));
 
         // 2. Проверяем, что состояние сбросилось в BASE
-        assertEquals(UserState.BASE, dialogManager.getSession(chatId).state());
+        assertEquals(UserState.BASE, cacheDialogUtil.getUserSession(chatId).get().state());
     }
 
     @Test
@@ -163,7 +171,7 @@ class DialogScrapperStepProcessorTest {
         String link = "https://github.com/user/repo";
 
         UserSession session = new UserSession(UserState.WAITING_FOR_LIST_TAG, link);
-        dialogManager.setSession(chatId, session);
+        cacheDialogUtil.addCache(chatId, session, ttl);
 
         Update update = mock(Update.class);
         Message message = mock(Message.class);
@@ -182,7 +190,7 @@ class DialogScrapperStepProcessorTest {
         // активных ссылок нет
         verify(telegramClient).sendMessage(eq(chatId), contains("У вас нет отслеживаемых ссылок"));
 
-        assertEquals(UserState.BASE, dialogManager.getSession(chatId).state());
+        assertEquals(UserState.BASE, cacheDialogUtil.getUserSession(chatId).get().state());
     }
 
     @Test
@@ -192,7 +200,7 @@ class DialogScrapperStepProcessorTest {
         String link = "https://github.com/user/repo";
 
         UserSession session = new UserSession(UserState.WAITING_FOR_LIST_TAG, link);
-        dialogManager.setSession(chatId, session);
+        cacheDialogUtil.addCache(chatId, session, ttl);
 
         Update update = mock(Update.class);
         Message message = mock(Message.class);
@@ -212,6 +220,6 @@ class DialogScrapperStepProcessorTest {
         // Assert
         verify(scrapperClient).getLinks(chatId, message.text());
         verify(telegramClient).sendMessage(eq(chatId), contains(link));
-        assertEquals(UserState.BASE, dialogManager.getSession(chatId).state());
+        assertEquals(UserState.BASE, cacheDialogUtil.getUserSession(chatId).get().state());
     }
 }
