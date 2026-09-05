@@ -35,6 +35,13 @@ spring:
             adaptive: true
             period: 10s
 app:
+  schedulerLock:
+    lockAtMostFor:
+      LinkUpdaterScheduler_update: 25s
+      DebeziumMetrics_refreshConnectorStatus: 10s
+    lockAtLeastFor:
+      LinkUpdaterScheduler_update: 5s
+      DebeziumMetrics_refreshConnectorStatus: 5s
   stackoverflow:
     key: ${STACKOVERFLOW_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
     access-token: ${STACKOVERFLOW_ACCESS_KEY} # Use env variable. DO NOT KEEP TOKEN HERE
@@ -274,10 +281,10 @@ debezium:
     outbox-route-topic: "order.outbox"
     plugin-name: "pgoutput"
   connect:
-    url: ${KAFKA_CONNECT_URL:http://connect:8083}
+    url: ${KAFKA_CONNECT_URL:http://localhost:8099}
   database:
     host: ${POSTGRES_HOST:postgresql}
-    port: ${POSTGRES_PORT:5432}
+    port: ${POSTGRES_PORT:5433}
     name: ${POSTGRES_DB:postgres}
     user: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:postgres}

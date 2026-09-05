@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,9 @@ public class GroupingOutboxScheduler {
     private Integer batchTakeSize;
 
     @Scheduled(fixedDelayString = "${app.grouping.window-ms}")
+    @SchedulerLock(name = "GroupingOutboxScheduler_groupAndMoveToOutbox",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.GroupingOutboxScheduler_groupAndMoveToOutbox:25s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.GroupingOutboxScheduler_groupAndMoveToOutbox:5s}")
     @Transactional
     public void groupAndMoveToOutbox() {
         OffsetDateTime now = OffsetDateTime.now();
@@ -112,7 +116,10 @@ public class GroupingOutboxScheduler {
         log.info("Сгруппировано {} чатов, создано {} записей в outbox", groupedByChat.size(), outboxEntries.size());
     }
 
-    @Scheduled(fixedDelayString = "${app.kafka.producer.outbox.delay:120s}")
+    @Scheduled(cron = "${app.scheduled.cron.GroupingOutboxScheduler_refreshProcessingLinkUpdateTable}")
+    @SchedulerLock(name = "GroupingOutboxScheduler_refreshProcessingLinkUpdateTable",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.GroupingOutboxScheduler_refreshProcessingLinkUpdateTable:100s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.GroupingOutboxScheduler_refreshProcessingLinkUpdateTable:20s}")
     public void refreshProcessingLinkUpdateTable() {
         OffsetDateTime threshold = OffsetDateTime.now().minusHours(1);
         int deletedCount;

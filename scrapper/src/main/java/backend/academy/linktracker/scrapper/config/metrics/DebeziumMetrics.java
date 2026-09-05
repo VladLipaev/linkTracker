@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -45,6 +46,9 @@ public class DebeziumMetrics {
     }
 
     @Scheduled(fixedDelay = 10000)
+    @SchedulerLock(name = "DebeziumMetrics_refreshConnectorStatus",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.DebeziumMetrics_refreshConnectorStatus:10s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.DebeziumMetrics_refreshConnectorStatus:5s}")
     public void refreshConnectorStatus() {
         try {
             String url = connectUrl + "/connectors/" + connectorName + "/status";

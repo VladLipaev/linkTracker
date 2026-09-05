@@ -74,6 +74,15 @@ app:
       caffeine:
         expire-time: 5m
         size: 10000
+  scheduled:
+    cron:
+      KafkaIdempotencyScheduler_cleanUp: "0 0 * * * *"
+  schedulerLock:
+    lockAtMostFor:
+      KafkaIdempotencyScheduler_cleanUp: 10m
+    lockAtLeastFor:
+      KafkaIdempotencyScheduler_cleanUp: 3m
+
 
 logging:
   cache:
@@ -83,9 +92,9 @@ logging:
       http:
         headers:
           - Authorization
-        keys: []
+        keys: [ ]
       telegram:
-        headers: []
+        headers: [ ]
         keys:
           - bot
 resilience4j:
@@ -197,3 +206,4 @@ management:
         http:
           server:
             requests: true
+

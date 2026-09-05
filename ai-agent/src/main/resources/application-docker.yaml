@@ -17,6 +17,21 @@ spring:
         jdbc:
           batch_size: 100
         order_inserts: true
+  data:
+    redis:
+      cluster:
+        nodes:
+          - valkey-node-1:7001
+          - valkey-node-2:7002
+          - valkey-node-3:7003
+          - valkey-node-4:7004
+          - valkey-node-5:7005
+          - valkey-node-6:7006
+      lettuce:
+        cluster:
+          refresh:
+            adaptive: true
+            period: 10s
 app:
   kafka:
     schema-registry: http://schema-registry:9093
