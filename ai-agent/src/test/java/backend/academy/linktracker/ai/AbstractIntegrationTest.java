@@ -1,7 +1,13 @@
 package backend.academy.linktracker.ai;
 
+import liquibase.integration.spring.SpringLiquibase;
 import org.junit.jupiter.api.Tag;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -10,9 +16,11 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
+import javax.sql.DataSource;
 
-@SpringBootTest
-
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.main.allow-bean-definition-overriding=true")
+@AutoConfigureTestRestTemplate
+@AutoConfigureMockMvc
 @Tag("integration")
 public abstract class AbstractIntegrationTest {
 
@@ -42,10 +50,17 @@ public abstract class AbstractIntegrationTest {
             .dependsOn(KAFKA_CONTAINER)
             .waitingFor(Wait.forHttp("/subjects").forStatusCode(200));
 
+    public static final GenericContainer<?> VALKEY =
+        new GenericContainer<>("valkey/valkey:latest")
+            .withNetwork(SHARED_NETWORK)
+            .withNetworkAliases("valkey")
+            .withExposedPorts(6379);
+
     static {
         POSTGRES.start();
         KAFKA_CONTAINER.start();
         SCHEMA_REGISTRY.start();
+        VALKEY.start();
     }
 
     @DynamicPropertySource
@@ -56,7 +71,24 @@ public abstract class AbstractIntegrationTest {
 
         registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
         registry.add(
-                "app.kafka.schema-registry",
-                () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort());
+            "app.kafka.schema-registry",
+            () -> "http://" + SCHEMA_REGISTRY.getHost() + ":" + SCHEMA_REGISTRY.getFirstMappedPort()
+        );
+    }
+
+    @Configuration
+    static class TestConfig {
+        @Bean
+        public SpringLiquibase liquibase(DataSource dataSource) {
+            SpringLiquibase liquibase = new SpringLiquibase();
+            liquibase.setDataSource(dataSource);
+            liquibase.setChangeLog("classpath:migrations/db.changelog-master.xml");
+            return liquibase;
+        }
+
+        @Bean
+        public LettuceConnectionFactory redisConnectionFactory() {
+            return new LettuceConnectionFactory(VALKEY.getHost(), VALKEY.getFirstMappedPort());
+        }
     }
 }

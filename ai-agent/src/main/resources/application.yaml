@@ -17,7 +17,41 @@ spring:
         jdbc:
           batch_size: 100
         order_inserts: true
+  data:
+    redis:
+      cluster:
+        nodes:
+          - 127.0.0.1:7001
+          - 127.0.0.1:7002
+          - 127.0.0.1:7003
+      lettuce:
+        cluster:
+          refresh:
+            adaptive: true
+            period: 10s
 app:
+  scheduled:
+    cron:
+      AiAgentKafkaOutboxWorker_refreshOutboxTable: "0 */2 * * * *"
+      AIAgentKafkaIdempotencyScheduler_cleanUp: "0 0 * * * *"
+      GroupingOutboxScheduler_refreshProcessingLinkUpdateTable: "0 */2 * * * *"
+  schedulerLock:
+    lockAtMostFor:
+      GroupingOutboxScheduler_groupAndMoveToOutbox: 25s
+      AIAgentKafkaIdempotencyScheduler_cleanUp: 10m
+      AiAgentKafkaOutboxWorker_sendToKafka: 50s
+      GroupingOutboxScheduler_refreshProcessingLinkUpdateTable: 100s
+      AiAgentKafkaOutboxWorker_refreshOutboxTable: 100s
+
+    lockAtLeastFor:
+      GroupingOutboxScheduler_groupAndMoveToOutbox: 5s
+      AIAgentKafkaIdempotencyScheduler_cleanUp: 3m
+      AiAgentKafkaOutboxWorker_sendToKafka: 10s
+      GroupingOutboxScheduler_refreshProcessingLinkUpdateTable: 20s
+      AiAgentKafkaOutboxWorker_refreshOutboxTable: 20s
+
+
+
   kafka:
     schema-registry: http://localhost:9093
     consumer:

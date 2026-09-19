@@ -3,6 +3,7 @@ package backend.academy.linktracker.ai.client.kafka;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,9 @@ public class AiAgentKafkaOutboxWorker {
     private Integer maxBatchesPerRun;
 
     @Scheduled(fixedDelayString = "${app.kafka.producer.send-delay:60s}")
+    @SchedulerLock(name = "AiAgentKafkaOutboxWorker_sendToKafka",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.AiAgentKafkaOutboxWorker_sendToKafka:50s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.AiAgentKafkaOutboxWorker_sendToKafka:10s}")
     public void sendToKafka() {
         int batchesProcessed = 0;
 
@@ -45,7 +49,10 @@ public class AiAgentKafkaOutboxWorker {
         }
     }
 
-    @Scheduled(fixedDelayString = "${app.kafka.producer.outbox.delay:120s}")
+    @Scheduled(cron = "${app.scheduled.cron.AiAgentKafkaOutboxWorker_refreshOutboxTable}")
+    @SchedulerLock(name = "AiAgentKafkaOutboxWorker_refreshOutboxTable",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.AiAgentKafkaOutboxWorker_refreshOutboxTable:100s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.AiAgentKafkaOutboxWorker_refreshOutboxTable:20s}")
     public void refreshOutboxTable() {
         OffsetDateTime threshold = OffsetDateTime.now().minusHours(1);
         int deletedCount;

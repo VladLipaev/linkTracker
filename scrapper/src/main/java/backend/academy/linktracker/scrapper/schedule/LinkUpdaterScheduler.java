@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -43,6 +44,9 @@ public class LinkUpdaterScheduler {
     }
 
     @Scheduled(fixedDelayString = "${app.scheduler.interval}")
+    @SchedulerLock(name = "linkUpdaterSchedulerUpdate",
+        lockAtMostFor = "${app.schedulerLock.lockAtMostFor.LinkUpdaterScheduler_update:25s}",
+        lockAtLeastFor = "${app.schedulerLock.lockAtLeastFor.LinkUpdaterScheduler_update:5s}")
     public void update() {
         log.info("Начинаем батч-проверку ссылок...");
 
